@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 source 构建/工具版本.env
 mkdir -p build/tools
 actual_xcode="$(xcodebuild -version | head -n 1 | awk '{print $2}')"
-if [[ "$actual_xcode" != "$XCODE_VERSION" ]]; then
+if [[ "$actual_xcode" != "$XCODE_VERSION" && ! "$actual_xcode" =~ ^"$XCODE_VERSION"\.[0-9]+$ ]]; then
   echo "Xcode mismatch: expected $XCODE_VERSION, received $actual_xcode" >&2
   exit 1
 fi
