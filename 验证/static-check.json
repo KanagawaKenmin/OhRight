@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-15T09:26:34.882Z",
+  "swiftFiles": 45,
+  "syntaxErrors": [],
+  "bashScripts": 3,
+  "yamlChecks": "passed",
+  "filesOver200Lines": [],
+  "limitations": [
+    "Grammar parsing only; Swift type checking, unit execution and iOS build require the macOS workflow."
+  ]
+}

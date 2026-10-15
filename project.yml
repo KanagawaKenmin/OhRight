@@ -1,0 +1,79 @@
+# 所属边界：工程构建；职责：生成 OhRight App 与测试 targets。
+# 输入：四层 Swift 文件与资源；输出：Xcode 工程；不包含云端能力或签名凭据。
+name: OhRight
+options:
+  minimumXcodeGenVersion: 2.46.0
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: zh-Hans
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    GENERATE_INFOPLIST_FILE: YES
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.2.0"
+configs:
+  Debug: debug
+  Release: release
+  PersonalTrial: release
+targets:
+  OhRight:
+    type: application
+    platform: iOS
+    sources:
+      - path: 应用
+        excludes: ["**/*.md"]
+      - path: 资源
+        excludes: ["**/*.md", "图标源.svg"]
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.ohright.personal
+        PRODUCT_NAME: OhRight
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: 哦对了
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+  OhRightTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: 测试/核心
+      - path: 测试/存储
+    dependencies:
+      - target: OhRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.ohright.personal.tests
+  OhRightUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: 测试/界面
+    dependencies:
+      - target: OhRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.ohright.personal.uitests
+schemes:
+  OhRight:
+    build:
+      targets:
+        OhRight: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [OhRightTests, OhRightUITests]
+      gatherCoverageData: true
+    archive:
+      config: PersonalTrial

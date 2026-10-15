@@ -1,0 +1,36 @@
+# 构建边界：免费自签名个人试用；云端只编译和验证，不使用 Apple 凭据。
+# 输入：源码仓库；输出：测试报告、未签名设备 IPA；无商店发布配置。
+workflows:
+  verify:
+    name: OhRight - Verify
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: "26.0"
+    scripts:
+      - name: Prepare pinned project
+        script: bash 构建/准备工程.sh
+      - name: Core and simulator checks
+        script: bash 构建/验证工程.sh
+    artifacts:
+      - build/*.log
+      - build/*.txt
+      - build/*.xcresult
+  package-personal:
+    name: OhRight - Personal unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      xcode: "26.0"
+    scripts:
+      - name: Prepare pinned project
+        script: bash 构建/准备工程.sh
+      - name: Verify before packaging
+        script: bash 构建/验证工程.sh
+      - name: Package iOS device IPA
+        script: bash 构建/打包个人版.sh
+    artifacts:
+      - build/artifacts/*
+      - build/*.log
+      - build/*.txt
+      - build/*.xcresult

@@ -1,0 +1,15 @@
+.DS_Store
+.build/
+.swiftpm/
+build/
+.tools/
+*.xcodeproj/
+*.xcworkspace/
+*.xcuserstate
+*.ipa
+*.dSYM/
+*.p8
+*.p12
+*.mobileprovision
+.env
+node_modules/
