@@ -16,6 +16,7 @@ workflows:
       - build/*.log
       - build/*.txt
       - build/*.xcresult
+      - build/crash-reports/*
   package-personal:
     name: OhRight - Personal unsigned IPA
     instance_type: mac_mini_m2
@@ -34,3 +35,4 @@ workflows:
       - build/*.log
       - build/*.txt
       - build/*.xcresult
+      - build/crash-reports/*
