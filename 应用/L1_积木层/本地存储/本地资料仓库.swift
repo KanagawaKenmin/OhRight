@@ -15,10 +15,21 @@ import SwiftData
     let container: ModelContainer
     private let context: ModelContext
 
-    init(inMemory: Bool = false) throws {
+    /// 打开仓库前创建存储父目录；storeURL 供隔离磁盘测试使用，正式路径保持系统默认。
+    init(inMemory: Bool = false, storeURL: URL? = nil) throws {
         let schema = Schema([StoredWorkspace.self])
-        let configuration = ModelConfiguration("OhRight", schema: schema, isStoredInMemoryOnly: inMemory,
+        let configuration: ModelConfiguration
+        if let storeURL {
+            guard !inMemory && storeURL.isFileURL else { throw DomainError.invalid("存储位置需要是本地文件。") }
+            configuration = ModelConfiguration("OhRight", schema: schema, url: storeURL, cloudKitDatabase: .none)
+        } else {
+            configuration = ModelConfiguration("OhRight", schema: schema, isStoredInMemoryOnly: inMemory,
                                                groupContainer: .none, cloudKitDatabase: .none)
+        }
+        if !inMemory {
+            try FileManager.default.createDirectory(at: configuration.url.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+        }
         container = try ModelContainer(for: schema, configurations: [configuration])
         context = ModelContext(container)
         context.autosaveEnabled = false

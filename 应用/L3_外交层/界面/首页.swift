@@ -98,6 +98,7 @@ struct HomeView: View {
     private func cards(_ items: [Item]) -> some View {
         ForEach(items) { item in
             NavigationLink(value: item.id) { ItemCard(item: item) }.buttonStyle(.plain).id(item.id)
+                .accessibilityIdentifier("itemCard/\(item.kind.rawValue)/\(item.id.uuidString)")
         }
     }
 }

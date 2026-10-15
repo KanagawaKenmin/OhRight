@@ -94,6 +94,7 @@ struct ItemDetailView: View {
     private func header(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(item.title).font(.largeTitle.weight(item.kind == .idea ? .medium : .bold)).textSelection(.enabled)
+                .accessibilityIdentifier("itemDetailTitle")
             if !item.body.isEmpty { Text(item.body).textSelection(.enabled) }
             if let due = item.deadline {
                 Label("\(due.label) · \(due.timeZoneID)", systemImage: "calendar").font(.subheadline).foregroundStyle(.secondary)
