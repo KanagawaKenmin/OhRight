@@ -7,25 +7,30 @@ import Foundation
 enum ItemEditing {
     static func create(draft: CaptureDraft, kind: ItemKind, now: Date,
                        timeZone: TimeZone) throws -> Item {
-        let text = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = draft.text
         try ContentValidation.text(text)
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
         var item = Item(kind: kind, title: String(lines.first ?? ""),
                         body: lines.dropFirst().joined(separator: "\n"), createdAt: now, updatedAt: now)
-        item.entries = [ItemEntry(kind: .creation, text: text, createdAt: now)]
+        item.entries = [ItemEntry(kind: .creation, text: text, createdAt: now, textFormat: draft.textFormat)]
         return try update(item, draft: draft, kind: kind, now: now, timeZone: timeZone, recordChange: false)
     }
 
     static func update(_ original: Item, draft: CaptureDraft, kind: ItemKind, now: Date,
                        timeZone: TimeZone, recordChange: Bool = true) throws -> Item {
         guard original.status != .deleted else { throw DomainError.missingItem }
+        if original.kind != kind && [.completed, .archived].contains(original.status) {
+            throw DomainError.invalid("请先重新开始，再转为计划。")
+        }
         var item = original
-        let content = draft.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = draft.text
         try ContentValidation.text(content)
         let lines = content.split(separator: "\n", omittingEmptySubsequences: false)
         item.kind = kind
         item.title = String(lines.first ?? "")
         item.body = lines.dropFirst().joined(separator: "\n")
+        item.textFormat = draft.textFormat
+        item.attachments = draft.attachments
         item.nextAction = draft.nextAction
         item.effortMinutes = draft.effortMinutes
         if kind == .plan {
@@ -46,17 +51,19 @@ enum ItemEditing {
         if recordChange && item != original {
             let change = original.kind != kind ? "琐事转为计划" : "修改了事项内容或截止时间"
             let previous = ([original.title, original.body].filter { !$0.isEmpty }).joined(separator: "\n")
-            item.entries.append(ItemEntry(kind: .change, text: change, createdAt: now, previousText: previous))
+            item.entries.append(ItemEntry(kind: .change, text: change, createdAt: now, previousText: previous,
+                previousFormat: original.textFormat, previousAttachments: original.attachments))
         }
         try ContentValidation.item(item)
         return item
     }
 
-    static func appendThought(to item: Item, text: String, now: Date) throws -> Item {
+    static func appendThought(to item: Item, text: String, now: Date, format: TextFormat = .plain,
+                              attachments: [Attachment] = []) throws -> Item {
         try ContentValidation.text(text)
         guard item.status != .deleted else { throw DomainError.missingItem }
         var item = item
-        item.entries.append(ItemEntry(kind: .thought, text: text, createdAt: now))
+        item.entries.append(ItemEntry(kind: .thought, text: text, createdAt: now, textFormat: format, attachments: attachments))
         item.updatedAt = now
         return item
     }
@@ -65,6 +72,7 @@ enum ItemEditing {
         CaptureDraft(text: ([item.title, item.body].filter { !$0.isEmpty }).joined(separator: "\n"),
                      nextAction: item.nextAction, dueDate: item.deadline?.value ?? Date(),
                      hasExactTime: item.deadline?.precision == .instant,
-                     effortMinutes: item.effortMinutes, deadlineReminderAt: item.deadlineReminderAt)
+                     effortMinutes: item.effortMinutes, deadlineReminderAt: item.deadlineReminderAt,
+                     textFormat: item.textFormat, attachments: item.attachments)
     }
 }

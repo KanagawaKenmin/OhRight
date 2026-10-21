@@ -8,12 +8,12 @@ struct QuietIntervalRow: View {
     @Binding var interval: QuietInterval
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("\(clock(interval.startMinute))–\(interval.startMinute >= interval.endMinute ? "次日 " : "")\(clock(interval.endMinute))")
+                .font(.subheadline.monospacedDigit())
             DatePicker("开始免打扰", selection: timeBinding(\.startMinute), displayedComponents: .hourAndMinute)
             DatePicker("结束免打扰", selection: timeBinding(\.endMinute), displayedComponents: .hourAndMinute)
             if interval.startMinute == interval.endMinute {
                 Text("起止相同：全天免打扰。").font(.caption).foregroundStyle(.orange)
-            } else if interval.startMinute > interval.endMinute {
-                Text("跨到第二天结束。").font(.caption).foregroundStyle(.secondary)
             }
         }.padding(.vertical, 6)
     }

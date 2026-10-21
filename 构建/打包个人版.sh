@@ -26,13 +26,15 @@ unzip -t "$ipa_path" > build/artifacts/ipa-check.txt
 shasum -a 256 "$ipa_path" > "$ipa_path.sha256"
 cp build/toolchain.txt build/artifacts/toolchain.txt
 python3 - <<'PY'
-import json, os, pathlib, subprocess
+import json, os, pathlib, plistlib, subprocess
 root = pathlib.Path('build/artifacts')
+app_info = plistlib.loads(pathlib.Path('build/device/Build/Products/PersonalTrial-iphoneos/OhRight.app/Info.plist').read_bytes())
 try:
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
 except subprocess.CalledProcessError:
     commit = 'unversioned'
-info = {'product':'OhRight', 'version':'0.2.0', 'minimumIOS':'26.0',
+info = {'product':'OhRight', 'version':app_info['CFBundleShortVersionString'],
+        'build':app_info['CFBundleVersion'], 'minimumIOS':app_info['MinimumOSVersion'],
         'signing':'unsigned: sign locally before install', 'commit':commit,
         'buildID':os.getenv('CM_BUILD_ID', 'manual')}
 (root / 'build-info.json').write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding='utf-8')

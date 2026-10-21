@@ -21,7 +21,7 @@ final class BackupAndTimeTests: XCTestCase {
         let restored = BackupCodec.restored(backup, revision: 12)
         XCTAssertEqual(restored.revision, 13)
         XCTAssertTrue(restored.runtime.intents.isEmpty)
-        XCTAssertTrue(restored.drafts.isEmpty)
+        XCTAssertEqual(restored.drafts, workspace.drafts)
         XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("diagnostic-only"))
     }
 

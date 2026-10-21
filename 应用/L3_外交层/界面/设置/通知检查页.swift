@@ -16,12 +16,12 @@ struct NotificationDiagnosticsView: View {
     var body: some View {
         List {
             Section("个人试用检查") {
-                Text("先保存提醒设置，再检查。安排成功表示请求已交给系统；锁屏能否看到仍需在手机上实际观察。")
+                Text("安排成功表示请求已交给系统；锁屏能否看到仍需在手机上实际观察。")
                     .font(.caption).foregroundStyle(.secondary)
                 Button("两分钟后发一条测试通知") {
                     run {
                         guard try await model.delivery.requestPermission() else { throw DomainError.invalid("请先在系统设置允许通知。") }
-                        try await model.delivery.testNotification()
+                        try await model.delivery.testNotification(sound: model.preferences.soundEnabled)
                         result = "已安排两分钟后测试。现在可以退出应用并锁屏。"
                     }
                 }.disabled(working)
@@ -36,10 +36,18 @@ struct NotificationDiagnosticsView: View {
                 if !result.isEmpty { Text(result).font(.subheadline) }
             }
             Section("系统待触发 · \(rows.count) 条") {
+                LabeledContent("系统权限", value: model.permissionLabel)
+                if let end = model.workspace.runtime.coverageEnd {
+                    LabeledContent("本地计算到", value: end.formatted(date: .abbreviated, time: .shortened))
+                }
+                if let error = model.workspace.runtime.lastError { Text(error).font(.caption) }
+                if let error = model.diagnosticError { Text(error).font(.caption) }
+                Button("重新安排提醒") { run { await model.refreshNotifications() } }
                 Button("刷新队列") { run { } }
                 ForEach(rows, id: \.id) { row in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(row.title)
+                        Text(row.id).font(.caption2).foregroundStyle(.secondary)
                         if let date = row.date { Text(date.formatted(date: .abbreviated, time: .shortened)).font(.caption) }
                     }
                 }
@@ -52,17 +60,17 @@ struct NotificationDiagnosticsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("通知检查").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("故障排查").navigationBarTitleDisplayMode(.inline)
         .task { rows = await model.delivery.diagnosticRows() }
         .fileExporter(isPresented: $exporting, document: document, contentType: .json, defaultFilename: "哦对了-排程报告") { result in
-            if case .failure(let error) = result { model.message = error.localizedDescription }
+            if case .failure(let error) = result { model.report(error) }
         }.appFeedback()
     }
 
     private func run(_ operation: @escaping @MainActor () async throws -> Void) {
         working = true
         Task { @MainActor in
-            do { try await operation() } catch { model.message = error.localizedDescription }
+            do { try await operation() } catch { model.report(error) }
             rows = await model.delivery.diagnosticRows()
             working = false
         }

@@ -4,7 +4,7 @@
 // 依赖：L0；失败：非法动作；重复目标状态不重复写历史。
 import Foundation
 
-enum LifecycleAction: Sendable { case complete, reopen, pause, resume, archive, delete, restore }
+enum LifecycleAction: Sendable, Equatable { case complete, reopen, pause, resume, archive, delete, restore }
 
 enum ItemLifecycle {
     static func apply(_ action: LifecycleAction, to original: Item, now: Date) throws -> Item {

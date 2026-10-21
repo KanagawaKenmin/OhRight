@@ -14,6 +14,8 @@ struct ItemEditorView: View {
     @State private var loaded = false
     @State private var saved = false
     @State private var savingTask: Task<Void, Never>?
+    @State private var preview = false
+    @State private var importingPhoto = false
     @FocusState private var focused: Bool
 
     private var draftKey: String { itemID.map { "edit/\($0)/\(kind.rawValue)" } ?? "capture/\(kind.rawValue)" }
@@ -29,24 +31,34 @@ struct ItemEditorView: View {
                     Text("第一行作为标题；没想完整也可以保存。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                Section {
+                    Toggle("Markdown 格式", isOn: Binding(get: { draft.textFormat == .markdown },
+                        set: { draft.textFormat = $0 ? .markdown : .plain }))
+                    Toggle("预览", isOn: $preview)
+                    if preview {
+                        let lines = draft.text.components(separatedBy: "\n")
+                        Text(lines.first ?? "").font(.headline)
+                        BodyReader(source: lines.dropFirst().joined(separator: "\n"), format: draft.textFormat)
+                    }
+                }
+                Section("图片") {
+                    PhotoAttachmentEditor(attachments: $draft.attachments, working: $importingPhoto,
+                        existingCount: itemID.flatMap { model.item($0) }?.entries.flatMap(\.attachments).count ?? 0,
+                        persist: persistDraft)
+                }
                 if kind == .plan { planFields }
                 Section("可选") {
-                    Picker("大约需要", selection: $draft.effortMinutes) {
-                        Text("还不确定").tag(nil as Int?)
-                        ForEach([5, 15, 30, 60, 120], id: \.self) { value in
-                            Text("\(value) 分钟").tag(Optional(value))
-                        }
-                    }
+                    EffortSlider(minutes: $draft.effortMinutes)
                 }
                 if itemID == nil, model.workspace.drafts[draftKey] != nil {
                     Section { Text("输入会自动保留为草稿。关闭后下次可继续。")
                         .font(.caption).foregroundStyle(.secondary) }
                 }
             }
-            .navigationTitle(isConversion ? "把念头变成计划" : itemID == nil ? (kind == .idea ? "记一下" : "新计划") : "编辑")
+            .navigationTitle(isConversion ? "转为计划" : itemID == nil ? (kind == .idea ? "记一下" : "新计划") : "编辑")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("关闭") { persistDraft(); dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("关闭") { persistDraft(); dismiss() }.disabled(importingPhoto) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
                         savingTask?.cancel()
@@ -54,7 +66,7 @@ struct ItemEditorView: View {
                             saved = true
                             dismiss()
                         }
-                    }.fontWeight(.semibold).accessibilityIdentifier("saveItem")
+                    }.fontWeight(.semibold).accessibilityIdentifier("saveItem").disabled(importingPhoto)
                 }
             }
             .onAppear {
@@ -74,6 +86,7 @@ struct ItemEditorView: View {
             }
             .onChange(of: phase) { _, state in if state != .active { persistDraft() } }
             .onDisappear { savingTask?.cancel(); persistDraft() }
+            .interactiveDismissDisabled(importingPhoto)
             .appFeedback()
         }.tint(AppPalette.accent(kind))
     }

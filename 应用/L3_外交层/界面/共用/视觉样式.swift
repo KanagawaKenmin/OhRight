@@ -52,9 +52,11 @@ struct AppFeedback: ViewModifier {
             if let text = model.message ?? model.notice {
                 HStack(alignment: .top) {
                     Text(text).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+                    if model.undoItem != nil { Button("撤销") { model.undoQuickAction() }.frame(minHeight: 44) }
                     Button {
                         model.message = nil
                         model.notice = nil
+                        model.undoItem = nil
                     } label: { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }
                         .accessibilityLabel("关闭提示")
                 }

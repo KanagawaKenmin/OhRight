@@ -21,6 +21,7 @@ struct ItemCard: View {
     let item: Item
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            if item.isStarred { Label("星标", systemImage: "star.fill").font(.caption).foregroundStyle(.secondary) }
             if let due = item.deadline {
                 HStack {
                     Text(due.label).font(.caption.weight(.bold)).foregroundStyle(AppPalette.red)
@@ -33,9 +34,9 @@ struct ItemCard: View {
             if item.kind == .plan && !item.nextAction.isEmpty {
                 Text("下一步：\(item.nextAction)").font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             } else if let entry = item.entries.last(where: { [.thought, .progress].contains($0.kind) }) {
-                Text(entry.text).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                Text(ReadableText.plain(entry.text, format: entry.textFormat)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             } else if !item.body.isEmpty {
-                Text(item.body).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                Text(ReadableText.plain(item.body, format: item.textFormat)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
             }
             if !item.steps.isEmpty {
                 Text("完成 \(item.completedStepCount) / \(item.steps.count) 步")

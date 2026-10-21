@@ -5,11 +5,12 @@
 import Foundation
 
 enum PlanProgress {
-    static func append(to original: Item, text: String, now: Date) throws -> Item {
+    static func append(to original: Item, text: String, now: Date, format: TextFormat = .plain,
+                       attachments: [Attachment] = []) throws -> Item {
         try ContentValidation.text(text)
         guard original.kind == .plan, original.status != .deleted else { throw DomainError.missingItem }
         var item = original
-        item.entries.append(ItemEntry(kind: .progress, text: text, createdAt: now))
+        item.entries.append(ItemEntry(kind: .progress, text: text, createdAt: now, textFormat: format, attachments: attachments))
         item.updatedAt = now
         return item
     }
@@ -34,7 +35,8 @@ enum PlanProgress {
         return item
     }
 
-    static func editEntry(in original: Item, entryID: UUID, text: String, now: Date) throws -> Item {
+    static func editEntry(in original: Item, entryID: UUID, text: String, now: Date,
+                          format: TextFormat? = nil, attachments: [Attachment]? = nil) throws -> Item {
         try ContentValidation.text(text)
         var item = original
         guard item.status != .deleted, let index = item.entries.firstIndex(where: { $0.id == entryID }),
@@ -42,7 +44,11 @@ enum PlanProgress {
             throw DomainError.invalid("这条记录不能编辑。")
         }
         item.entries[index].previousText = item.entries[index].text
+        item.entries[index].previousFormat = item.entries[index].textFormat
+        item.entries[index].previousAttachments = item.entries[index].attachments
         item.entries[index].text = text
+        if let format { item.entries[index].textFormat = format }
+        if let attachments { item.entries[index].attachments = attachments }
         item.entries[index].editedAt = now
         item.updatedAt = now
         return item

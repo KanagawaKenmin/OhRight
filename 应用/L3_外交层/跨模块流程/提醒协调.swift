@@ -14,6 +14,7 @@ extension AppModel {
             refreshAgain = false
             let access = await delivery.access()
             permissionLabel = access.label
+            notificationAccess = access
             let actual = await delivery.pending()
             let now = Date()
             var source = workspace
@@ -54,23 +55,21 @@ extension AppModel {
             next.runtime.timeZoneID = calendar.timeZone.identifier
             next.runtime.lastPreferences = preferences
             next.runtime.resetQueue = false
+            next.runtime.invalidatedItemIDs = result.errors.isEmpty ? [] : source.runtime.invalidatedItemIDs
             next.runtime.lastError = result.errors.isEmpty ? nil : result.errors.joined(separator: "\n")
             pendingRows = result.accepted.sorted { $0.fireAt < $1.fireAt }
             attempt { try commit(next, business: false, refresh: false) }
         } while refreshAgain
     }
 
-    func enableNotifications() async {
+    func requestNotificationAccess() async {
         do {
-            guard try await delivery.requestPermission() else {
-                message = "通知尚未允许，记录功能仍可使用。可以到系统设置开启。"
-                return
-            }
-            var value = preferences
-            value.enabled = true
-            try savePreferences(value)
+            let allowed = try await delivery.requestPermission()
             await refreshNotifications()
-        } catch { message = error.localizedDescription }
+            if !allowed {
+                message = "通知尚未允许，记录功能仍可使用。可以到系统设置开启。"
+            }
+        } catch { report(error) }
     }
 
     func handle(_ event: NotificationEvent) async {
@@ -88,7 +87,7 @@ extension AppModel {
                 try commit(next, refresh: false)
                 await refreshNotifications()
                 notice = "已安排稍后提醒：\(snooze.fireAt.formatted(date: .abbreviated, time: .shortened))"
-            } catch { message = error.localizedDescription }
+            } catch { report(error) }
         } else if intent.category == .digest {
             routeGeneration += 1
             selectMode(.plan)

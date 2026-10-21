@@ -39,7 +39,7 @@ import SwiftData
         if let stored = try context.fetch(FetchDescriptor<StoredWorkspace>()).first {
             let decoder = JSONDecoder()
             let value = try decoder.decode(Workspace.self, from: stored.payload)
-            guard value.schemaVersion == 1 else { throw DomainError.invalid("资料版本无法识别，原资料已保留。") }
+            guard value.schemaVersion == 2 else { throw DomainError.invalid("资料版本无法识别，原资料已保留。") }
             return value
         }
         let initial = Workspace()

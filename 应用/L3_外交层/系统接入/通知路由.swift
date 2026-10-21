@@ -22,7 +22,9 @@ struct NotificationEvent: Sendable {
         let repository = try LocalWorkspaceRepository(inMemory: inMemory)
         let delivery = LocalNotificationDelivery()
         delivery.configure()
-        let value = try AppModel(repository: repository, delivery: delivery)
+        let store = try inMemory ? AttachmentStore(root: FileManager.default.temporaryDirectory
+            .appendingPathComponent("uitest-\(UUID().uuidString)")) : nil
+        let value = try AppModel(repository: repository, delivery: delivery, attachmentStore: store)
         model = value
         return value
     }
@@ -59,10 +61,13 @@ final class NotificationBridge: NSObject, UNUserNotificationCenterDelegate, @unc
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         let intent = LocalNotificationDelivery.intent(notification.request)
-        let suppress = await MainActor.run {
-            guard let intent, let model = NotificationRouter.shared.model else { return false }
-            return model.readingItemID.map { intent.itemIDs.contains($0) } ?? false
+        let hasSound = notification.request.content.sound != nil
+        return await MainActor.run {
+            let model = NotificationRouter.shared.model
+            if let intent, let id = model?.readingItemID, intent.itemIDs.contains(id) { return [] }
+            var options: UNNotificationPresentationOptions = [.banner, .list]
+            if model?.preferences.soundEnabled == true && hasSound { options.insert(.sound) }
+            return options
         }
-        return suppress ? [] : [.banner, .list]
     }
 }

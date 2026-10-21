@@ -9,21 +9,44 @@ struct EntryEditorView: View {
     let entry: ItemEntry
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
+    @State private var draft = CaptureDraft()
+    @State private var preview = false
+    @State private var loaded = false
+    @State private var saved = false
+    @State private var importingPhoto = false
+    private var draftKey: String { "entryEdit/\(itemID)/\(entry.id)" }
     var body: some View {
         NavigationStack {
-            Form { TextEditor(text: $text).frame(minHeight: 220).accessibilityLabel("记录内容") }
+            Form {
+                TextEditor(text: $draft.text).frame(minHeight: 220).accessibilityLabel("记录内容")
+                Toggle("Markdown 格式", isOn: Binding(get: { draft.textFormat == .markdown },
+                    set: { draft.textFormat = $0 ? .markdown : .plain }))
+                Toggle("预览", isOn: $preview)
+                if preview { BodyReader(source: draft.text, format: draft.textFormat) }
+                PhotoAttachmentEditor(attachments: $draft.attachments, working: $importingPhoto,
+                    existingCount: (model.item(itemID)?.attachments.count ?? 0) +
+                        (model.item(itemID)?.entries.filter { $0.id != entry.id }.flatMap(\.attachments).count ?? 0),
+                    persist: persist)
+            }
                 .navigationTitle("修正记录").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                    ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.disabled(importingPhoto) }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("保存") {
-                            if model.attempt({ try model.transformItem(itemID) {
-                                try PlanProgress.editEntry(in: $0, entryID: entry.id, text: text, now: Date())
-                            } }) { dismiss() }
-                        }
+                            if model.attempt({ try model.saveEntryEdit(itemID, entryID: entry.id, draft: draft, draftKey: draftKey) }) {
+                                saved = true; dismiss()
+                            }
+                        }.disabled(importingPhoto)
                     }
-                }.onAppear { text = entry.text }.appFeedback()
+                }.onAppear {
+                    guard !loaded else { return }
+                    draft = model.workspace.drafts[draftKey] ?? CaptureDraft(text: entry.text,
+                        textFormat: entry.textFormat, attachments: entry.attachments)
+                    loaded = true
+                }
+                .onChange(of: draft) { _, _ in persist() }
+                .onDisappear { persist() }.interactiveDismissDisabled(importingPhoto).appFeedback()
         }
     }
+    private func persist() { if loaded && !saved { model.saveDraft(draft, key: draftKey) } }
 }

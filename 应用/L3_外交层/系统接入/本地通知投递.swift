@@ -5,8 +5,9 @@
 import Foundation
 import UserNotifications
 
-@MainActor final class LocalNotificationDelivery: ReminderDelivery {
+@MainActor final class LocalNotificationDelivery: NotificationService {
     let center = UNUserNotificationCenter.current()
+    private var permissionTask: Task<Bool, Error>?
 
     func configure() {
         let open = UNNotificationAction(identifier: "open", title: "打开", options: [.foreground])
@@ -17,20 +18,28 @@ import UserNotifications
         ])
     }
 
-    func access() async -> (allowed: Bool, label: String) {
+    func access() async -> NotificationAccess {
         let settings = await center.notificationSettings()
         switch settings.authorizationStatus {
-        case .authorized: return (true, settings.alertSetting == .enabled ? "已允许" : "已允许，横幅由系统设置控制")
-        case .provisional: return (true, "临时允许，仅安静投递")
-        case .ephemeral: return (true, "暂时允许")
-        case .denied: return (false, "未允许，请到系统设置开启")
-        case .notDetermined: return (false, "尚未请求")
-        @unknown default: return (false, "未知权限状态")
+        case .authorized: return settings.alertSetting == .enabled ? .allowed : .quiet
+        case .provisional: return .quiet
+        case .ephemeral: return .allowed
+        case .denied: return .denied
+        case .notDetermined: return .notDetermined
+        @unknown default: return .unknown
         }
     }
 
     func requestPermission() async throws -> Bool {
-        try await center.requestAuthorization(options: [.alert, .sound])
+        if let permissionTask { return try await permissionTask.value }
+        let task = Task { @MainActor in
+            let status = await access()
+            if status != .notDetermined { return status.allowed }
+            return try await center.requestAuthorization(options: [.alert, .sound])
+        }
+        permissionTask = task
+        defer { permissionTask = nil }
+        return try await task.value
     }
 
     func pending() async -> [ReminderIntent] {
@@ -66,10 +75,12 @@ import UserNotifications
         center.removeDeliveredNotifications(withIdentifiers: invalid.map { $0.request.identifier })
     }
 
-    func testNotification() async throws {
+    func testNotification(sound: Bool = false) async throws {
+        guard try await requestPermission() else { throw DomainError.invalid("通知未开启，请前往 iPhone 通知设置。") }
         let content = UNMutableNotificationContent()
         content.title = "哦对了，测试提醒到了"
         content.body = "这条通知由 iPhone 本地安排。打开应用查看你的便条。"
+        content.sound = sound ? .default : nil
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 120, repeats: false)
         center.removePendingNotificationRequests(withIdentifiers: ["debug/two-minutes"])
         try await center.add(UNNotificationRequest(identifier: "debug/two-minutes", content: content, trigger: trigger))

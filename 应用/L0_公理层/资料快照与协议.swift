@@ -11,10 +11,12 @@ struct CaptureDraft: Codable, Equatable, Sendable {
     var hasExactTime = false
     var effortMinutes: Int?
     var deadlineReminderAt: Date?
+    var textFormat: TextFormat = .markdown
+    var attachments: [Attachment] = []
 }
 
 struct Workspace: Codable, Equatable, Sendable {
-    var schemaVersion = 1
+    var schemaVersion = 2
     var items: [Item] = []
     var preferences = ReminderPreferences()
     var appearance: Appearance = .system
@@ -23,6 +25,7 @@ struct Workspace: Codable, Equatable, Sendable {
     var revision = 0
     var randomSeed: UInt64 = UInt64.random(in: 1...UInt64.max)
     var runtime = ScheduleRuntime()
+    var notificationOnboarding = NotificationOnboarding()
 }
 
 @MainActor protocol WorkspaceRepository {
@@ -51,5 +54,44 @@ struct LocalCapabilities: CapabilityProvider {
     func query() -> Capabilities { Capabilities() }
     func requestMode(_ mode: ReminderMode) throws {
         if mode == .cloud { throw DomainError.cloudUnavailable }
+    }
+}
+
+extension CaptureDraft {
+    private enum CodingKeys: String, CodingKey {
+        case text, nextAction, dueDate, hasExactTime, effortMinutes, deadlineReminderAt, textFormat, attachments
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        text = try c.decode(String.self, forKey: .text)
+        nextAction = try c.decode(String.self, forKey: .nextAction)
+        dueDate = try c.decode(Date.self, forKey: .dueDate)
+        hasExactTime = try c.decode(Bool.self, forKey: .hasExactTime)
+        effortMinutes = try c.decodeIfPresent(Int.self, forKey: .effortMinutes)
+        deadlineReminderAt = try c.decodeIfPresent(Date.self, forKey: .deadlineReminderAt)
+        textFormat = try c.decodeIfPresent(TextFormat.self, forKey: .textFormat) ?? .plain
+        attachments = try c.decodeIfPresent([Attachment].self, forKey: .attachments) ?? []
+    }
+}
+
+extension Workspace {
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, items, preferences, appearance, lastMode, drafts, revision, randomSeed, runtime, notificationOnboarding
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try c.decode(Int.self, forKey: .schemaVersion)
+        guard (1...2).contains(version) else { throw DomainError.invalid("资料版本无法识别，原资料已保留。") }
+        schemaVersion = 2
+        items = try c.decode([Item].self, forKey: .items)
+        preferences = try c.decode(ReminderPreferences.self, forKey: .preferences)
+        appearance = try c.decode(Appearance.self, forKey: .appearance)
+        lastMode = try c.decode(ItemKind.self, forKey: .lastMode)
+        drafts = try c.decode([String: CaptureDraft].self, forKey: .drafts)
+        revision = try c.decode(Int.self, forKey: .revision)
+        randomSeed = try c.decode(UInt64.self, forKey: .randomSeed)
+        runtime = try c.decode(ScheduleRuntime.self, forKey: .runtime)
+        notificationOnboarding = try c.decodeIfPresent(NotificationOnboarding.self, forKey: .notificationOnboarding)
+            ?? NotificationOnboarding(isNewInstallation: false)
     }
 }

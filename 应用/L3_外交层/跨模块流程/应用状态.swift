@@ -11,20 +11,32 @@ import Observation
     var readingItemID: UUID?
     var routeGeneration = 0
     var message: String?
+    var diagnosticError: String?
     var notice: String?
+    var undoItem: ItemUndo?
     var permissionLabel = "正在检查"
+    var notificationAccess: NotificationAccess = .unknown
+    var onboardingInProgress = false
+    var hasStarted = false
     var isRefreshing = false
     var refreshAgain = false
     var pendingRows: [ReminderIntent] = []
     @ObservationIgnored let repository: any WorkspaceRepository
-    @ObservationIgnored let delivery: LocalNotificationDelivery
+    @ObservationIgnored let delivery: any NotificationService
     @ObservationIgnored let planner: any ReminderPlanner
+    @ObservationIgnored let attachments: AttachmentStore
 
-    init(repository: any WorkspaceRepository, delivery: LocalNotificationDelivery,
-         planner: any ReminderPlanner = LocalReminderPlanner()) throws {
+    init(repository: any WorkspaceRepository, delivery: any NotificationService,
+         planner: any ReminderPlanner = LocalReminderPlanner(), attachmentStore: AttachmentStore? = nil) throws {
         self.repository = repository
         self.delivery = delivery
         self.planner = planner
+        if let attachmentStore { self.attachments = attachmentStore }
+        else {
+            let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                appropriateFor: nil, create: true).appendingPathComponent("Attachments", isDirectory: true)
+            self.attachments = try AttachmentStore(root: root)
+        }
         workspace = try repository.load()
     }
 
@@ -36,7 +48,13 @@ import Observation
 
     @discardableResult func attempt(_ operation: () throws -> Void) -> Bool {
         do { try operation(); return true }
-        catch { message = error.localizedDescription; return false }
+        catch { report(error); return false }
+    }
+
+    /// 正常页面只给可执行的领域提示，原始错误保留给故障排查。
+    func report(_ error: any Error) {
+        if !(error is DomainError) { diagnosticError = error.localizedDescription }
+        message = (error as? DomainError)?.errorDescription ?? "操作未能完成，请稍后重试。"
     }
 
     /// 显式事务保存成功才发布新快照；业务版本与待协调标记同次写入。
@@ -66,6 +84,15 @@ import Observation
         }
     }
 
+    func clearDraft(_ key: String) {
+        guard workspace.drafts[key] != nil else { return }
+        attempt {
+            var next = workspace
+            next.drafts.removeValue(forKey: key)
+            try commit(next, business: false, refresh: false)
+        }
+    }
+
     func setAppearance(_ value: Appearance) {
         attempt {
             var next = workspace
@@ -83,17 +110,37 @@ import Observation
         }
         var next = workspace
         next.preferences = value
-        try commit(next)
+        if value.enabled != preferences.enabled {
+            next.notificationOnboarding.userChoseReminder = true
+            next.notificationOnboarding.offerEnable = false
+        }
+        do { try commit(next) }
+        catch { diagnosticError = error.localizedDescription; throw DomainError.invalid("设置未能保存，请稍后重试。") }
     }
 
     func start() async {
+        guard !hasStarted else { return }
+        hasStarted = true
         delivery.configure()
         let expiration = Date().addingTimeInterval(-30 * 24 * 3600)
         let old = workspace.items.count
         var next = workspace
+        let expiredIDs = Set(next.items.filter { $0.status == .deleted && ($0.deletedAt ?? .distantFuture) < expiration }.map(\.id))
         next.items.removeAll { $0.status == .deleted && ($0.deletedAt ?? .distantFuture) < expiration }
+        next.removeDrafts(for: expiredIDs)
         if next.items.count != old { attempt { try commit(next, refresh: false) } }
+        do { try attachments.collect(referenced: workspace.allAttachments) }
+        catch { message = "图片清理暂未完成，现有记录仍可使用。" }
         await NotificationRouter.shared.attach(self)
         await refreshNotifications()
+    }
+}
+
+extension Workspace {
+    /// 永久清理只移除对应事项的编辑草稿，其他捕获草稿保持可恢复。
+    mutating func removeDrafts(for ids: Set<UUID>) {
+        drafts = drafts.filter { key, _ in
+            !ids.contains { key == "entry/\($0)" || key.hasPrefix("edit/\($0)/") || key.hasPrefix("entryEdit/\($0)/") }
+        }
     }
 }

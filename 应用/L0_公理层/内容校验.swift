@@ -36,13 +36,26 @@ enum ContentValidation {
             item.completedAt, item.deletedAt].compactMap({ $0 }) { try date(value) }
         for entry in item.entries {
             try text(entry.text)
+            if let previous = entry.previousText, previous.count > 20_000 { throw DomainError.invalid("历史记录文字过长。") }
+            try attachmentGroup(entry.attachments)
+            try attachmentGroup(entry.previousAttachments)
             try date(entry.createdAt)
             if let edited = entry.editedAt { try date(edited) }
         }
+        guard item.attachments.count + item.entries.flatMap(\.attachments).count <= Attachment.maximumPerItem else {
+            throw DomainError.invalid("每条事项及记录最多保留 20 张图片。")
+        }
+        try attachmentGroup(item.attachments)
         for step in item.steps { try text(step.text, limit: 500) }
         if let effort = item.effortMinutes, !(1...1440).contains(effort) {
             throw DomainError.invalid("预计时长须在 1–1440 分钟之间。")
         }
+    }
+
+    static func attachmentGroup(_ attachments: [Attachment]) throws {
+        guard attachments.count <= Attachment.maximumPerItem,
+              Set(attachments.map(\.id)).count == attachments.count else { throw DomainError.invalid("图片数量过多或编号重复。") }
+        for attachment in attachments { try attachment.validate() }
     }
 
     static func date(_ value: Date) throws {
@@ -57,9 +70,9 @@ enum ContentValidation {
               preferences.quietIntervals.allSatisfy({
                   (0..<1440).contains($0.startMinute) && (0..<1440).contains($0.endMinute)
               }) else { throw DomainError.invalid("提醒时间或次数无效。") }
-        if preferences.enabled && preferences.digestEnabled && preferences.timePolicy == .avoidQuiet {
+        if preferences.digestEnabled && preferences.timePolicy == .avoidQuiet {
             guard !preferences.quietIntervals.contains(where: { $0.contains(minute: preferences.digestMinute) }) else {
-                throw DomainError.invalid("摘要时间落在免打扰内，请修改时间或关闭摘要。")
+                throw DomainError.invalid("回顾时间在免打扰时段内，请调整时间。")
             }
         }
     }

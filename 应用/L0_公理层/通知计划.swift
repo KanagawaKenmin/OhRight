@@ -54,4 +54,29 @@ struct ScheduleRuntime: Codable, Equatable, Sendable {
     var snoozeActions: [Date] = []
     var requestedSnoozes: [ReminderIntent] = []
     var resetQueue = false
+    var invalidatedItemIDs: [UUID] = []
+}
+
+extension ScheduleRuntime {
+    private enum CodingKeys: String, CodingKey {
+        case intents, history, coverageEnd, appliedRevision, omittedDeadlines, capacityLimited, lastError
+        case timeZoneID, lastPreferences, handledActions, snoozeActions, requestedSnoozes, resetQueue, invalidatedItemIDs
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        intents = try c.decode([ReminderIntent].self, forKey: .intents)
+        history = try c.decode([ReminderIntent].self, forKey: .history)
+        coverageEnd = try c.decodeIfPresent(Date.self, forKey: .coverageEnd)
+        appliedRevision = try c.decode(Int.self, forKey: .appliedRevision)
+        omittedDeadlines = try c.decode(Int.self, forKey: .omittedDeadlines)
+        capacityLimited = try c.decode(Bool.self, forKey: .capacityLimited)
+        lastError = try c.decodeIfPresent(String.self, forKey: .lastError)
+        timeZoneID = try c.decode(String.self, forKey: .timeZoneID)
+        lastPreferences = try c.decodeIfPresent(ReminderPreferences.self, forKey: .lastPreferences)
+        handledActions = try c.decode([String: Date].self, forKey: .handledActions)
+        snoozeActions = try c.decode([Date].self, forKey: .snoozeActions)
+        requestedSnoozes = try c.decode([ReminderIntent].self, forKey: .requestedSnoozes)
+        resetQueue = try c.decode(Bool.self, forKey: .resetQueue)
+        invalidatedItemIDs = try c.decodeIfPresent([UUID].self, forKey: .invalidatedItemIDs) ?? []
+    }
 }

@@ -6,7 +6,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json, .plainText, UTType(filenameExtension: "md") ?? .plainText] }
+    static var readableContentTypes: [UTType] { [.zip, .json, .plainText, UTType(filenameExtension: "md") ?? .plainText] }
     var data: Data
     init(data: Data) { self.data = data }
     init(configuration: ReadConfiguration) throws { data = configuration.file.regularFileContents ?? Data() }

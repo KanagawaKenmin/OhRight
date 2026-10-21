@@ -8,6 +8,7 @@ extension AppModel {
     func saveItem(draft: CaptureDraft, kind: ItemKind, existingID: UUID?, draftKey: String) throws {
         let now = Date()
         var next = workspace
+        let converting = existingID.flatMap { item($0) }?.kind == .idea && kind == .plan
         if let id = existingID {
             guard let index = next.items.firstIndex(where: { $0.id == id }) else { throw DomainError.missingItem }
             next.items[index] = try ItemEditing.update(next.items[index], draft: draft, kind: kind,
@@ -17,6 +18,11 @@ extension AppModel {
             next.items.insert(item, at: 0)
         }
         next.drafts.removeValue(forKey: draftKey)
+        if converting, let id = existingID {
+            next.lastMode = .plan
+            next.runtime.invalidatedItemIDs.append(id)
+            next.runtime.requestedSnoozes.removeAll { $0.itemIDs.contains(id) }
+        }
         if let item = existingID.flatMap({ id in next.items.first { $0.id == id } }) ?? next.items.first,
            let reminder = item.deadlineReminderAt, reminder > now,
            !next.preferences.allows(reminder, calendar: calendar) {
@@ -30,6 +36,19 @@ extension AppModel {
         guard let index = next.items.firstIndex(where: { $0.id == id }) else { throw DomainError.missingItem }
         next.items[index] = try operation(next.items[index])
         try ContentValidation.item(next.items[index])
+        try commit(next)
+    }
+
+    /// 添加记录与删除对应草稿在同一保存事务内，避免成功后残留含图草稿。
+    func appendDraft(_ id: UUID, draft: CaptureDraft) throws {
+        var next = workspace
+        guard let index = next.items.firstIndex(where: { $0.id == id }) else { throw DomainError.missingItem }
+        let original = next.items[index]
+        next.items[index] = original.kind == .idea ?
+            try ItemEditing.appendThought(to: original, text: draft.text, now: Date(), format: draft.textFormat, attachments: draft.attachments) :
+            try PlanProgress.append(to: original, text: draft.text, now: Date(), format: draft.textFormat, attachments: draft.attachments)
+        try ContentValidation.item(next.items[index])
+        next.drafts.removeValue(forKey: "entry/\(id)")
         try commit(next)
     }
 
@@ -67,6 +86,10 @@ extension AppModel {
         guard item(id)?.status == .deleted else { throw DomainError.invalid("请先移入回收站。") }
         var next = workspace
         next.items.removeAll { $0.id == id }
+        next.removeDrafts(for: [id])
         try commit(next)
+        if undoItem?.before.id == id { undoItem = nil }
+        do { try attachments.collect(referenced: workspace.allAttachments) }
+        catch { notice = "内容已删除，图片空间将在下次打开时继续清理。" }
     }
 }

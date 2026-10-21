@@ -9,7 +9,9 @@ struct ItemDetailView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var editorKind: ItemKind?
-    @State private var entryText = ""
+    @State private var entryDraft = CaptureDraft()
+    @State private var entryPreview = false
+    @State private var importingPhoto = false
     @State private var editingEntry: ItemEntry?
     @State private var confirmPermanent = false
 
@@ -23,19 +25,26 @@ struct ItemDetailView: View {
                             if item.kind == .plan { ChecklistView(itemID: id) }
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(item.kind == .idea ? "又想到一点" : "记下这次进展").font(.headline)
-                                TextField(item.kind == .idea ? "补一句就好…" : "完成了什么，或卡在哪里？", text: $entryText, axis: .vertical)
+                                TextField(item.kind == .idea ? "补一句就好…" : "完成了什么，或卡在哪里？", text: $entryDraft.text, axis: .vertical)
                                     .lineLimit(3...8).padding(14).background(.background, in: RoundedRectangle(cornerRadius: 12))
-                                Button(item.kind == .idea ? "留下这点想法" : "保存进展") {
-                                    if model.attempt({ try model.append(id, text: entryText) }) { entryText = "" }
+                                Button(item.kind == .idea ? "添加记录" : "保存进展") {
+                                    if model.attempt({ try model.appendDraft(id, draft: entryDraft) }) { entryDraft = CaptureDraft() }
                                 }.buttonStyle(.borderedProminent).foregroundStyle(Color("OnAccent"))
-                                    .disabled(entryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                    .disabled(importingPhoto || entryDraft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                Toggle("Markdown 格式", isOn: Binding(get: { entryDraft.textFormat == .markdown },
+                                    set: { entryDraft.textFormat = $0 ? .markdown : .plain }))
+                                Toggle("预览", isOn: $entryPreview)
+                                if entryPreview { BodyReader(source: entryDraft.text, format: entryDraft.textFormat) }
+                                PhotoAttachmentEditor(attachments: $entryDraft.attachments, working: $importingPhoto,
+                                    existingCount: item.attachments.count + item.entries.flatMap(\.attachments).count,
+                                    persist: persistEntry)
                             }
                             lifecycleButtons(item)
                         } else {
                             Button("从回收站恢复") { model.attempt { try model.lifecycle(id, action: .restore) } }
                             Button("永久删除", role: .destructive) { confirmPermanent = true }
                         }
-                        Text("留下的痕迹").font(.headline)
+                        Text("记录").font(.headline)
                         ForEach(item.entries.sorted { $0.createdAt > $1.createdAt }) { entry in
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
@@ -46,9 +55,13 @@ struct ItemDetailView: View {
                                         Button("编辑") { editingEntry = entry }.font(.caption).frame(minHeight: 44)
                                     }
                                 }
-                                Text(entry.text).textSelection(.enabled)
+                                BodyReader(source: entry.text, format: entry.textFormat)
+                                AttachmentGallery(attachments: entry.attachments)
                                 if let previous = entry.previousText {
-                                    DisclosureGroup("上个版本") { Text(previous).font(.subheadline).textSelection(.enabled) }
+                                    DisclosureGroup("上个版本") {
+                                        BodyReader(source: previous, format: entry.previousFormat ?? .plain)
+                                        AttachmentGallery(attachments: entry.previousAttachments)
+                                    }
                                         .font(.caption).foregroundStyle(.secondary)
                                 }
                             }.frame(maxWidth: .infinity, alignment: .leading).itemCard(item.kind)
@@ -57,11 +70,12 @@ struct ItemDetailView: View {
                 }
                 .background { ModeBackground(mode: item.kind) }
                 .navigationTitle(item.kind.label).navigationBarTitleDisplayMode(.inline)
+                .navigationBarBackButtonHidden(importingPhoto)
                 .toolbar {
                     if item.status != .deleted {
                         Menu {
                             Button("编辑内容") { editorKind = item.kind }
-                            if item.kind == .idea {
+                            if item.kind == .idea && item.status == .active {
                                 Button("转为计划") { editorKind = .plan }
                                 Button("先放七天") { model.attempt { try model.mute(id, permanently: false) } }
                             }
@@ -69,14 +83,17 @@ struct ItemDetailView: View {
                                 model.attempt { try model.mute(id, permanently: true) }
                             }
                             if item.mutedUntil != nil { Button("结束暂放") { model.attempt { try model.unmute(id) } } }
-                            Button("不打算做了，归档") { model.attempt { try model.lifecycle(id, action: .archive) } }
-                            Button("移入回收站", role: .destructive) { model.attempt { try model.lifecycle(id, action: .delete) } }
-                        } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }.accessibilityLabel("事项操作")
+                            Button("归档") { model.attempt { try model.quickAction(id, action: .archive) } }
+                            Button("移入回收站", role: .destructive) { model.attempt { try model.quickAction(id, action: .delete) } }
+                        } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }
+                            .accessibilityLabel("事项操作").disabled(importingPhoto)
                     }
                 }
-                .onAppear { model.readingItemID = id; entryText = model.workspace.drafts["entry/\(id)"]?.text ?? "" }
+                .onAppear { model.readingItemID = id; entryDraft = model.workspace.drafts["entry/\(id)"] ?? CaptureDraft() }
                 .onDisappear { if model.readingItemID == id { model.readingItemID = nil } }
-                .onChange(of: entryText) { _, value in model.saveDraft(CaptureDraft(text: value), key: "entry/\(id)") }
+                .onChange(of: entryDraft) { _, value in
+                    persistEntry()
+                }
             } else {
                 ContentUnavailableView("这条内容已不在这里", systemImage: "tray", description: Text("可以返回看看其他念头。"))
             }
@@ -95,12 +112,17 @@ struct ItemDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(item.title).font(.largeTitle.weight(item.kind == .idea ? .medium : .bold)).textSelection(.enabled)
                 .accessibilityIdentifier("itemDetailTitle")
-            if !item.body.isEmpty { Text(item.body).textSelection(.enabled) }
+            if !item.body.isEmpty { BodyReader(source: item.body, format: item.textFormat) }
+            AttachmentGallery(attachments: item.attachments)
             if let due = item.deadline {
                 Label("\(due.label) · \(due.timeZoneID)", systemImage: "calendar").font(.subheadline).foregroundStyle(.secondary)
                 if due.boundary <= Date() && item.status == .active { Text("已经过期，可以继续、改期，或先归档。").font(.caption) }
             }
             Text(item.status.label).font(.caption.weight(.semibold)).foregroundStyle(AppPalette.accent(item.kind))
+            if item.kind == .idea && item.status == .active {
+                Button("转为计划", systemImage: "calendar.badge.plus") { editorKind = .plan }
+                    .buttonStyle(.bordered).frame(minHeight: 44)
+            }
             if !item.nextAction.isEmpty { Text("下一步：\(item.nextAction)").font(.headline) }
             if let until = item.mutedUntil, until > Date() { Text("暂放到 \(until.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
             if !item.reminderEnabled { Text("这条内容已关闭提醒。").font(.caption).foregroundStyle(.secondary) }
@@ -120,5 +142,11 @@ struct ItemDetailView: View {
                 }
             }
         }
+    }
+
+    private func persistEntry() {
+        let key = "entry/\(id)"
+        if entryDraft.text.isEmpty && entryDraft.attachments.isEmpty { model.clearDraft(key) }
+        else { model.saveDraft(entryDraft, key: key) }
     }
 }

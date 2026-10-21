@@ -18,10 +18,11 @@ struct LocalReminderPlanner: ReminderPlanner {
         }
         let active = workspace.items.filter(\.isRemindable)
         let activeIDs = Set(active.map(\.id))
-        var intents = existing.filter {
-            $0.category == .snooze && $0.fireAt > now &&
-            $0.itemIDs.allSatisfy { activeIDs.contains($0) } &&
-            preferences.allows($0.fireAt, calendar: calendar)
+        var intents = existing.filter { intent in
+            intent.category == .snooze && intent.fireAt > now &&
+            !workspace.runtime.invalidatedItemIDs.contains(where: { intent.itemIDs.contains($0) }) &&
+            intent.itemIDs.allSatisfy { activeIDs.contains($0) } &&
+            preferences.allows(intent.fireAt, calendar: calendar)
         }.sorted { $0.fireAt < $1.fireAt }
         intents = Array(intents.prefix(min(4, capacity)))
         intents = intents.compactMap { intent in
@@ -88,6 +89,7 @@ struct LocalReminderPlanner: ReminderPlanner {
         for intent in existing.filter({ $0.category == .idea && $0.fireAt > now && $0.fireAt < end })
             .sorted(by: { $0.fireAt < $1.fireAt }) {
             guard let item = candidates.first(where: { intent.itemIDs == [$0.id] }),
+                  !workspace.runtime.invalidatedItemIDs.contains(item.id),
                   workspace.preferences.allows(intent.fireAt, calendar: calendar),
                   eligible(item, at: intent.fireAt, history: workspace.runtime.history + fixed + result),
                   separated(intent.fireAt, from: fixed + result) else { continue }
