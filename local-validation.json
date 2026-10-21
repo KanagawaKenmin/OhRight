@@ -1,0 +1,29 @@
+{
+  "version": "0.3.0",
+  "build": 2,
+  "checkedAt": "2026-10-21T11:19:29.8891903Z",
+  "staticChecks": {
+    "checkedAt": "2026-10-21T11:19:29.735Z",
+    "swiftFiles": 76,
+    "syntaxErrors": [],
+    "bashScripts": 3,
+    "yamlChecks": "passed",
+    "filesOver200Lines": [],
+    "limitations": [
+      "Grammar parsing only; Swift type checking, unit execution and iOS build require the macOS workflow."
+    ]
+  },
+  "testsDefined": {
+    "coreDefined": 46,
+    "storageDefined": 11,
+    "uiDefined": 4
+  },
+  "macOSOnlyCoreTests": 1,
+  "testsExecuted": false,
+  "architectureAndNavigationErrors": [],
+  "pngFixture": "CRC and zlib validated",
+  "swiftCompilerAvailable": false,
+  "xcodeAvailable": false,
+  "cloudVerifyRun": false,
+  "newIPAGenerated": false
+}
