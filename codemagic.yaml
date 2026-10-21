@@ -15,6 +15,7 @@ workflows:
     artifacts:
       - build/*.log
       - build/*.txt
+      - build/*.json
       - build/*.xcresult
       - build/crash-reports/*
   package-personal:
@@ -34,5 +35,6 @@ workflows:
       - build/artifacts/*
       - build/*.log
       - build/*.txt
+      - build/*.json
       - build/*.xcresult
       - build/crash-reports/*

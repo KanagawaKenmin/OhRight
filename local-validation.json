@@ -1,9 +1,9 @@
 {
   "version": "0.3.0",
   "build": 2,
-  "checkedAt": "2026-10-21T11:19:29.8891903Z",
+  "checkedAt": "2026-10-21T11:36:17.786829+00:00",
   "staticChecks": {
-    "checkedAt": "2026-10-21T11:19:29.735Z",
+    "checkedAt": "2026-10-21T11:35:46.404Z",
     "swiftFiles": 76,
     "syntaxErrors": [],
     "bashScripts": 3,
@@ -25,5 +25,25 @@
   "swiftCompilerAvailable": false,
   "xcodeAvailable": false,
   "cloudVerifyRun": false,
-  "newIPAGenerated": false
+  "newIPAGenerated": false,
+  "swiftTestsExecuted": false,
+  "buildOrchestrationTests": {
+    "executed": true,
+    "passed": 11,
+    "failed": 0,
+    "log": "build/build-script-tests.log"
+  },
+  "sourceVerification": {
+    "version": "0.3.0",
+    "build": "2",
+    "verifiedFiles": 95
+  },
+  "reportedCloudBuild": {
+    "id": "6ad8a04f454d2506f7abc974",
+    "commit": "66d7799",
+    "coreTestsPassed": 25,
+    "simulatorBuildPassed": true,
+    "simulatorBootReady": false,
+    "completeLocal03SourcesObserved": false
+  }
 }

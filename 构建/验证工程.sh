@@ -49,38 +49,19 @@ while True:
 PY
 }
 
-run_step 300 "1/5 Core tests" swift test --parallel 2>&1 | tee build/core-tests.log
-echo "Selecting an available iPhone simulator with iOS 26 or later..."
-simulator_id="$(xcrun simctl list devices available --json | python3 -c '
-import json, re, sys
-data = json.load(sys.stdin)
-devices = [d for runtime, values in data["devices"].items()
-           if (match := re.search(r"\.iOS-(\d+)-", runtime)) and int(match[1]) >= 26
-           for d in values if d.get("isAvailable") and d["name"].startswith("iPhone")]
-devices.sort(key=lambda d: ("iPhone 17" not in d["name"], d["name"]))
-if not devices: raise SystemExit("No available iPhone simulator with iOS 26 or later")
-print(devices[0]["udid"])
-')"
-printf '%s\n' "$simulator_id" > build/simulator-id.txt
-echo "Selected simulator: $simulator_id"
-xcrun simctl list devices available > build/simulators.txt
-
-# 先只编译，避免把编译和测试启动混成一个无法判断的等待阶段。
-# 模拟器使用无账号的本机临时签名；设备 IPA 仍由独立脚本生成未签名版本。
-common=(-project OhRight.xcodeproj -scheme OhRight -configuration Debug
-  -destination "platform=iOS Simulator,id=$simulator_id" -destination-timeout 60
-  -derivedDataPath build/simulator -parallel-testing-enabled NO
-  CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES CODE_SIGN_IDENTITY=-
-  CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=)
+simulator_id=""
 # App 启动/测试卡住时同时保存设备状态、模拟器系统日志和主机崩溃报告。
 collect_diagnostics() {
   code=$?
   trap - EXIT
   if [[ "$code" -ne 0 ]]; then
-    xcrun simctl list devices > build/simulator-failure-state.txt 2>&1 || true
-    run_step 30 "Collect simulator log" xcrun simctl spawn "$simulator_id" log show \
-      --last 5m --style compact --predicate 'process CONTAINS "OhRight" OR process == "SpringBoard" OR process == "testmanagerd"' \
-      > build/simulator-failure.log 2>&1 || true
+    run_step 15 "Collect device state" xcrun simctl list devices \
+      > build/simulator-failure-state.txt 2>&1 || true
+    if [[ -n "$simulator_id" ]]; then
+      run_step 30 "Collect simulator log" xcrun simctl spawn "$simulator_id" log show \
+        --last 5m --style compact --predicate 'process CONTAINS "OhRight" OR process == "SpringBoard" OR process == "backboardd" OR process == "testmanagerd"' \
+        > build/simulator-failure.log 2>&1 || true
+    fi
     python3 - <<'PY'
 import pathlib, shutil, time
 source = pathlib.Path.home() / 'Library/Logs/DiagnosticReports'
@@ -91,14 +72,33 @@ for report in source.glob('*'):
         shutil.copy2(report, target / report.name)
 PY
   fi
+  if [[ -n "$simulator_id" ]]; then
+    run_step 20 "Shut down CI simulator" xcrun simctl shutdown "$simulator_id" \
+      > build/simulator-shutdown.log 2>&1 || true
+  fi
   exit "$code"
 }
 trap collect_diagnostics EXIT
+run_step 30 "Verify delivered source version" python3 构建/检查源码版本.py \
+  2>&1 | tee build/source-verification.log
+run_step 30 "Build orchestration regression tests" python3 -m unittest discover -s 测试/构建 -p 'test_*.py' \
+  2>&1 | tee build/build-script-tests.log
+run_step 300 "1/5 Core tests" swift test --parallel 2>&1 | tee build/core-tests.log
+run_step 120 "Prepare SDK-matched CI simulator" python3 构建/模拟器准备.py create \
+  2>&1 | tee build/simulator-prepare.log
+simulator_id="$(cat build/simulator-id.txt)"
+
+# 使用当前 SDK 对应的全新专用设备；同一个 UUID 贯穿编译、启动与测试。
+common=(-project OhRight.xcodeproj -scheme OhRight -configuration Debug
+  -destination "platform=iOS Simulator,id=$simulator_id" -destination-timeout 60
+  -derivedDataPath build/simulator -parallel-testing-enabled NO
+  CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES CODE_SIGN_IDENTITY=-
+  CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=)
 run_step 480 "2/5 Build simulator app and tests" xcodebuild build-for-testing \
   "${common[@]}" 2>&1 | tee build/ios-build.log
 
-# bootstatus -b 同时启动或等待已启动的设备，且不会因为设备已启动而报重复启动。
-run_step 180 "3/5 Boot simulator" xcrun simctl bootstatus "$simulator_id" -b \
+# 必须通过 bootstatus 就绪检查；失败保留诊断，只重启本次设备并重试一次。
+run_step 420 "3/5 Boot simulator" python3 构建/模拟器准备.py boot "$simulator_id" \
   2>&1 | tee build/simulator-boot.log
 
 test_options=(-test-timeouts-enabled YES -default-test-execution-time-allowance 120
