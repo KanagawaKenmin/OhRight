@@ -4,7 +4,7 @@ SwiftUI 原生 iPhone App，最低 iOS 26.0。琐事留下想法，计划记录�
 
 0.3 已写入源码：首次通知授权、分级即时设置、搜索/历史/回收站、转计划、长按星标与撤销、空白滑动、耗时滑杆、有限 Markdown、本地图片与含图草稿、完整 ZIP 备份及旧 JSON 迁移。保留原双模式首页、检查项、补充与进度、本地提醒。
 
-**0.3 核心已云端编译成功，备份日期精度修复后待重跑测试；App 编译与真机验收仍待完成，未生成 0.3 IPA。** 最新源码包为 `build/artifacts/OhRight-source-0.3.0-backup-fix.zip`。详见[实施与迁移记录](文档/体验改版实施_0.3.md)。既有 `build/codemagic/OhRight-personal-unsigned.ipa` 是提交 `61d0ce8` 的 0.2 历史产物，不能用于验收本次改动。
+**0.3 核心 49 项已云端通过；运行时查询准备修复后待重跑，App 编译和真机验收仍待完成，未生成 0.3 IPA。** 最新源码包为 `build/artifacts/OhRight-source-0.3.0-runtime-fix.zip`。详见[实施与迁移记录](文档/体验改版实施_0.3.md)。既有 `build/codemagic/OhRight-personal-unsigned.ipa` 是提交 `61d0ce8` 的 0.2 历史产物，不能用于验收本次改动。
 
 ## 从源码到 iPhone
 

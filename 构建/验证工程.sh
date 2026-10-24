@@ -84,7 +84,7 @@ run_step 30 "Verify delivered source version" python3 构建/检查源码版本.
 run_step 30 "Build orchestration regression tests" python3 -m unittest discover -s 测试/构建 -p 'test_*.py' \
   2>&1 | tee build/build-script-tests.log
 run_step 300 "1/5 Core tests" swift test --parallel 2>&1 | tee build/core-tests.log
-run_step 120 "Prepare SDK-matched CI simulator" python3 构建/模拟器准备.py create \
+run_step 360 "Prepare SDK-matched CI simulator" python3 构建/模拟器准备.py create \
   2>&1 | tee build/simulator-prepare.log
 simulator_id="$(cat build/simulator-id.txt)"
 

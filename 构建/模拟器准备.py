@@ -37,10 +37,55 @@ def command(arguments, timeout=30):
     return result.stdout.strip()
 
 
+def open_simulator(identifier=None):
+    """提前启动当前 Xcode 的 Simulator，让首次运行时查询有机会完成服务初始化。"""
+    developer = os.environ.get('DEVELOPER_DIR') or command(['xcode-select', '-p'], timeout=10)
+    arguments = ['open', '-a', str(Path(developer) / 'Applications/Simulator.app')]
+    if identifier:
+        arguments += ['--args', '-CurrentDeviceUDID', identifier]
+    command(arguments, timeout=10)
+
+
+def runtime_list(root):
+    """冷启动查询最多两次，每次 90 秒；失败保留宿主诊断，不能伪造可用运行时。"""
+    attempts = []
+    try:
+        for attempt in (1, 2):
+            try:
+                open_simulator()
+            except (subprocess.SubprocessError, OSError) as error:
+                print(f'Simulator warm-up unavailable; runtime discovery is still required: {error}', flush=True)
+            try:
+                output = command(['xcrun', 'simctl', 'list', 'runtimes', '--json'], timeout=90)
+                runtimes = json.loads(output)
+                if not isinstance(runtimes.get('runtimes'), list):
+                    raise ValueError('Runtime response does not contain a runtimes list')
+                attempts.append({'attempt': attempt, 'ready': True})
+                return runtimes
+            except (subprocess.SubprocessError, OSError) as error:
+                attempts.append({'attempt': attempt, 'ready': False, 'error': str(error)})
+                try:
+                    diagnostics = command(['ps', '-axo', 'pid,etime,comm'], timeout=10)
+                    (root / f'simulator-discovery-attempt-{attempt}.txt').write_text(diagnostics, encoding='utf-8')
+                except (subprocess.SubprocessError, OSError) as diagnostic_error:
+                    print(f'Host diagnostics unavailable: {diagnostic_error}', flush=True)
+                try:
+                    service_log = command(['log', 'show', '--last', '2m', '--style', 'compact', '--predicate',
+                                           'process == "CoreSimulatorService" OR process == "simdiskimaged"'], timeout=10)
+                    (root / f'simulator-service-attempt-{attempt}.log').write_text(service_log, encoding='utf-8')
+                except (subprocess.SubprocessError, OSError) as diagnostic_error:
+                    print(f'Simulator service log unavailable: {diagnostic_error}', flush=True)
+                if attempt == 2:
+                    raise RuntimeError('Simulator runtime discovery failed twice; no device or test results were assumed') from error
+                print('Runtime discovery did not finish; reopening Simulator before one retry.', flush=True)
+    finally:
+        (root / 'simulator-discovery-result.json').write_text(json.dumps(attempts, indent=2), encoding='utf-8')
+
+
 def create_device(root):
     root.mkdir(parents=True, exist_ok=True)
     sdk = command(['xcrun', '--sdk', 'iphonesimulator', '--show-sdk-version'])
-    runtimes = json.loads(command(['xcrun', 'simctl', 'list', 'runtimes', '--json']))
+    runtimes = runtime_list(root)
     (root / 'simulator-runtimes.json').write_text(json.dumps({'sdk': sdk, **runtimes}, indent=2), encoding='utf-8')
     runtime = matching_runtime(runtimes['runtimes'], sdk)
     device_type = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17'
@@ -75,9 +120,7 @@ def boot_device(root, identifier):
     try:
         for attempt in (1, 2):
             try:
-                developer = os.environ.get('DEVELOPER_DIR') or command(['xcode-select', '-p'], timeout=10)
-                command(['open', '-a', str(Path(developer) / 'Applications/Simulator.app'),
-                         '--args', '-CurrentDeviceUDID', identifier], timeout=10)
+                open_simulator(identifier)
             except (subprocess.SubprocessError, OSError) as error:
                 print(f'Simulator UI could not be opened; boot readiness is still required: {error}', flush=True)
             try:

@@ -1,9 +1,9 @@
 {
-  "checkedAt": "2026-10-24T04:32:27.886056+00:00",
+  "checkedAt": "2026-10-24T05:11:04.013450+00:00",
   "version": "0.3.0",
   "build": 2,
   "staticChecks": {
-    "checkedAt": "2026-10-24T04:31:54.830Z",
+    "checkedAt": "2026-10-24T05:10:27.256Z",
     "swiftFiles": 78,
     "syntaxErrors": [],
     "bashScripts": 3,
@@ -16,53 +16,25 @@
   "sourceVerification": {
     "version": "0.3.0",
     "build": "2",
-    "verifiedFiles": 97
+    "verifiedFiles": 98
   },
   "buildOrchestrationTests": {
-    "passed": 11,
+    "passed": 16,
     "failed": 0,
-    "log": "build/build-script-tests-backup-fix.log"
+    "log": "build/build-script-tests-runtime-fix.log"
   },
-  "swiftTestsDefined": {
-    "core": 49,
-    "storage": 11,
-    "ui": 4
-  },
-  "swiftTestsExecutedLocally": false,
-  "swiftCompilerAvailableLocally": false,
+  "pythonFilesParsed": 7,
+  "swiftFilesUnchangedFromCloudPassedSource": 78,
   "previousCloudBuild": {
-    "index": 8,
-    "commit": "ceea462",
+    "index": 9,
+    "commit": "df21729",
+    "coreTestsPassed": 49,
     "sourceVersionVerified": true,
-    "coreCompiled": true,
-    "coreTestsScheduled": 46,
-    "observedFailure": "AttachmentBackupTests.testCompleteBackupRoundTripAcrossFreshStores: exact draft equality",
-    "simulatorPhaseReached": false,
-    "log": "build/artifacts/core_and_simulator_checks-verify8-ceea462.log"
+    "failure": "simctl list runtimes --json timed out after 30 seconds",
+    "deviceCreated": false,
+    "log": "build/artifacts/core_and_simulator_checks-verify9-df21729.log"
   },
-  "floatingPointModel": [
-    {
-      "referenceSeconds": 814881696.1234567,
-      "oldEncodingDriftSeconds": 0.0,
-      "nativeDoubleJSONExact": true
-    },
-    {
-      "referenceSeconds": 814881696.1234568,
-      "oldEncodingDriftSeconds": 1.1920928955078125e-07,
-      "nativeDoubleJSONExact": true
-    },
-    {
-      "referenceSeconds": 0.123456789,
-      "oldEncodingDriftSeconds": 4.6746765139382696e-08,
-      "nativeDoubleJSONExact": true
-    },
-    {
-      "referenceSeconds": -0.123456789,
-      "oldEncodingDriftSeconds": -4.6746765139382696e-08,
-      "nativeDoubleJSONExact": true
-    }
-  ],
-  "floatingPointModelLimitation": "IEEE-754/JSON model only; not Swift Foundation execution",
-  "fixRetestedOnCloud": false,
+  "runtimeRecoveryVerifiedOnCloud": false,
+  "appSimulatorBuildPassed": false,
   "newIPAGenerated": false
 }

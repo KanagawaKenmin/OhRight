@@ -40,7 +40,7 @@ class SimulatorPreparationTests(unittest.TestCase):
             self.assertTrue(arguments[3].startswith('OhRight-CI-'))
             return identifier
 
-        with TemporaryWorkspace() as directory, patch.object(simulator, 'command', side_effect=fake):
+        with TemporaryWorkspace() as directory, patch.object(simulator, 'command', side_effect=fake), patch.object(simulator, 'open_simulator'):
             root = Path(directory)
             self.assertEqual(simulator.create_device(root), identifier)
             self.assertEqual((root / 'simulator-id.txt').read_text().strip(), identifier)
