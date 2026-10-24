@@ -12,6 +12,7 @@ struct BackupEnvelope: Codable, Sendable {
     var appearance: Appearance
     var drafts: [String: CaptureDraft] = [:]
     var attachmentHashes: [String: String] = [:]
+    var dateEncoding = BackupDateCoding.lossless
 }
 
 enum BackupCodec {
@@ -21,14 +22,13 @@ enum BackupCodec {
                                     drafts: workspace.drafts, attachmentHashes: hashes)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .millisecondsSince1970
+        encoder.dateEncodingStrategy = .deferredToDate
         return try encoder.encode(backup)
     }
 
     static func decode(_ data: Data) throws -> BackupEnvelope {
         guard data.count <= 50_000_000 else { throw DomainError.invalid("备份超过 50 MB，请先检查文件。") }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .millisecondsSince1970
+        let decoder = try BackupDateCoding.decoder(for: data)
         let backup = try decoder.decode(BackupEnvelope.self, from: data)
         guard (1...2).contains(backup.formatVersion) else { throw DomainError.invalid("暂不支持这个备份版本。") }
         guard backup.items.count <= 50_000 else { throw DomainError.invalid("备份记录数量过多。") }
@@ -92,7 +92,7 @@ enum BackupCodec {
 
 extension BackupEnvelope {
     private enum CodingKeys: String, CodingKey {
-        case formatVersion, exportedAt, items, preferences, appearance, drafts, attachmentHashes
+        case formatVersion, exportedAt, items, preferences, appearance, drafts, attachmentHashes, dateEncoding
     }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -103,5 +103,6 @@ extension BackupEnvelope {
         appearance = try c.decode(Appearance.self, forKey: .appearance)
         drafts = try c.decodeIfPresent([String: CaptureDraft].self, forKey: .drafts) ?? [:]
         attachmentHashes = try c.decodeIfPresent([String: String].self, forKey: .attachmentHashes) ?? [:]
+        dateEncoding = try c.decodeIfPresent(String.self, forKey: .dateEncoding) ?? BackupDateCoding.legacy
     }
 }

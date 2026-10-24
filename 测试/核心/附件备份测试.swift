@@ -27,7 +27,8 @@ final class AttachmentBackupTests: XCTestCase {
             previousText: "**旧文本**", previousFormat: .markdown, previousAttachments: [image])]
         item = try ItemLifecycle.apply(.delete, to: item, now: Samples.now)
         var workspace = Samples.workspace([item])
-        workspace.drafts["capture/plan"] = CaptureDraft(text: "含图片草稿", attachments: [image])
+        let fractionalDate = Date(timeIntervalSinceReferenceDate: 814_881_696.1234568)
+        workspace.drafts["capture/plan"] = CaptureDraft(text: "含图片草稿", dueDate: fractionalDate, attachments: [image])
         let data = try CompleteBackup.encode(workspace, store: first)
         let package = try CompleteBackup.decode(data)
         let second = try AttachmentStore(root: root())
@@ -35,6 +36,8 @@ final class AttachmentBackupTests: XCTestCase {
         let restored = BackupCodec.restored(package.manifest, revision: 4)
         XCTAssertEqual(restored.items, workspace.items)
         XCTAssertEqual(restored.drafts, workspace.drafts)
+        XCTAssertEqual(restored.drafts["capture/plan"]?.dueDate.timeIntervalSinceReferenceDate.bitPattern,
+                       fractionalDate.timeIntervalSinceReferenceDate.bitPattern)
         XCTAssertEqual(try second.data(for: image), pixel)
         XCTAssertEqual(restored.items[0].status, .deleted)
         XCTAssertTrue(restored.items[0].isStarred)

@@ -1,10 +1,10 @@
 {
+  "checkedAt": "2026-10-24T04:32:27.886056+00:00",
   "version": "0.3.0",
   "build": 2,
-  "checkedAt": "2026-10-21T11:36:17.786829+00:00",
   "staticChecks": {
-    "checkedAt": "2026-10-21T11:35:46.404Z",
-    "swiftFiles": 76,
+    "checkedAt": "2026-10-24T04:31:54.830Z",
+    "swiftFiles": 78,
     "syntaxErrors": [],
     "bashScripts": 3,
     "yamlChecks": "passed",
@@ -13,37 +13,56 @@
       "Grammar parsing only; Swift type checking, unit execution and iOS build require the macOS workflow."
     ]
   },
-  "testsDefined": {
-    "coreDefined": 46,
-    "storageDefined": 11,
-    "uiDefined": 4
-  },
-  "macOSOnlyCoreTests": 1,
-  "testsExecuted": false,
-  "architectureAndNavigationErrors": [],
-  "pngFixture": "CRC and zlib validated",
-  "swiftCompilerAvailable": false,
-  "xcodeAvailable": false,
-  "cloudVerifyRun": false,
-  "newIPAGenerated": false,
-  "swiftTestsExecuted": false,
-  "buildOrchestrationTests": {
-    "executed": true,
-    "passed": 11,
-    "failed": 0,
-    "log": "build/build-script-tests.log"
-  },
   "sourceVerification": {
     "version": "0.3.0",
     "build": "2",
-    "verifiedFiles": 95
+    "verifiedFiles": 97
   },
-  "reportedCloudBuild": {
-    "id": "6ad8a04f454d2506f7abc974",
-    "commit": "66d7799",
-    "coreTestsPassed": 25,
-    "simulatorBuildPassed": true,
-    "simulatorBootReady": false,
-    "completeLocal03SourcesObserved": false
-  }
+  "buildOrchestrationTests": {
+    "passed": 11,
+    "failed": 0,
+    "log": "build/build-script-tests-backup-fix.log"
+  },
+  "swiftTestsDefined": {
+    "core": 49,
+    "storage": 11,
+    "ui": 4
+  },
+  "swiftTestsExecutedLocally": false,
+  "swiftCompilerAvailableLocally": false,
+  "previousCloudBuild": {
+    "index": 8,
+    "commit": "ceea462",
+    "sourceVersionVerified": true,
+    "coreCompiled": true,
+    "coreTestsScheduled": 46,
+    "observedFailure": "AttachmentBackupTests.testCompleteBackupRoundTripAcrossFreshStores: exact draft equality",
+    "simulatorPhaseReached": false,
+    "log": "build/artifacts/core_and_simulator_checks-verify8-ceea462.log"
+  },
+  "floatingPointModel": [
+    {
+      "referenceSeconds": 814881696.1234567,
+      "oldEncodingDriftSeconds": 0.0,
+      "nativeDoubleJSONExact": true
+    },
+    {
+      "referenceSeconds": 814881696.1234568,
+      "oldEncodingDriftSeconds": 1.1920928955078125e-07,
+      "nativeDoubleJSONExact": true
+    },
+    {
+      "referenceSeconds": 0.123456789,
+      "oldEncodingDriftSeconds": 4.6746765139382696e-08,
+      "nativeDoubleJSONExact": true
+    },
+    {
+      "referenceSeconds": -0.123456789,
+      "oldEncodingDriftSeconds": -4.6746765139382696e-08,
+      "nativeDoubleJSONExact": true
+    }
+  ],
+  "floatingPointModelLimitation": "IEEE-754/JSON model only; not Swift Foundation execution",
+  "fixRetestedOnCloud": false,
+  "newIPAGenerated": false
 }
