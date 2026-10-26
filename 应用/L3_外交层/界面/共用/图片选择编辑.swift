@@ -9,11 +9,18 @@ struct PhotoAttachmentEditor: View {
     @Binding var attachments: [Attachment]
     @Binding var working: Bool
     var existingCount = 0
+    var kind: ItemKind = .idea
+    var format: Binding<TextFormat>?
+    var preview: Binding<Bool>?
     var persist: () -> Void
     @Environment(AppModel.self) private var model
     @State private var selection: [PhotosPickerItem] = []
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) { picker; formatTools }
+                VStack(alignment: .leading, spacing: 4) { picker; formatTools }
+            }
             AttachmentGallery(attachments: attachments)
             ForEach(Array(attachments.enumerated()), id: \.element.id) { index, attachment in
                 HStack {
@@ -27,10 +34,6 @@ struct PhotoAttachmentEditor: View {
                     }.disabled(working).frame(minHeight: 44)
                 }
             }
-            PhotosPicker(selection: $selection, maxSelectionCount: max(1, 20 - existingCount - attachments.count),
-                         matching: .images, photoLibrary: .shared()) {
-                Label(working ? "正在导入…" : "添加图片", systemImage: "photo.badge.plus").frame(minHeight: 44)
-            }.disabled(working || existingCount + attachments.count >= Attachment.maximumPerItem)
         }
         .onChange(of: selection) { _, photos in
             guard !photos.isEmpty, !working else { return }
@@ -56,5 +59,18 @@ struct PhotoAttachmentEditor: View {
                 working = false
             }
         }
+    }
+
+    private var picker: some View {
+        PhotosPicker(selection: $selection, maxSelectionCount: max(1, 20 - existingCount - attachments.count),
+                     matching: .images, photoLibrary: .shared()) {
+            Label(working ? "正在导入…" : "图片", systemImage: "photo.badge.plus").fixedSize(horizontal: true, vertical: true)
+        }
+        .buttonStyle(EditorToolStyle(kind: kind)).accessibilityLabel(working ? "正在导入图片" : "添加图片")
+        .disabled(working || existingCount + attachments.count >= Attachment.maximumPerItem)
+    }
+
+    @ViewBuilder private var formatTools: some View {
+        if let format, let preview { RecordFormatTools(format: format, preview: preview, kind: kind) }
     }
 }

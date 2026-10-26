@@ -1,75 +1,73 @@
 // 所属层级：L3 外交层（界面）
-// 文件职责：互斥识别长按/点击并展示圆形快捷动作。
-// 输入：选中事项；输出：导航、星标、可撤销状态命令。
-// 依赖：AppModel；窄屏和辅助大字体将操作放在卡片下方。
+// 文件职责：固定行高的跟手卡片、横排圆形动作及辅助操作。
+// 输入：事项、首页统一交互状态；输出：导航与可撤销命令。
+// 依赖：AppModel、首页手势状态；不自行识别横滑或改变卡片布局。
 import SwiftUI
 
 struct HomeActionCard: View {
     let item: Item
-    @Binding var selected: UUID?
+    let interaction: HomeInteraction
+    var active: Bool
     @Environment(AppModel.self) private var model
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var offset: CGFloat { interaction.cardOffset(item.id) }
+    private var opened: Bool { interaction.openedItemID == item.id }
+    private var progress: CGFloat { min(1, abs(offset) / HomeInteraction.railWidth) }
+
     var body: some View {
-        Group {
-            if selected == item.id {
-                if typeSize.isAccessibilitySize { VStack(alignment: .leading) { card; actions } }
-                else {
-                    ViewThatFits(in: .horizontal) {
-                        HStack { card.frame(minWidth: 240); actions.fixedSize() }
-                        VStack(alignment: .leading) { card; actions }
-                    }
+        ZStack(alignment: .trailing) {
+            actions.opacity(Double(progress))
+                .scaleEffect(reduceMotion ? 1 : 0.85 + progress * 0.15, anchor: .trailing)
+                .allowsHitTesting(opened).accessibilityHidden(!opened)
+            ItemCard(item: item, minimumHeight: typeSize.isAccessibilitySize ? 150 : 112)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if opened { settle { interaction.reset() } }
+                    else { interaction.reset(); model.path.append(item.id) }
                 }
-            } else { card }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("itemCard/\(item.kind.rawValue)/\(item.id.uuidString)")
+                .accessibilityValue("\(item.isStarred ? "已星标；" : "")\(opened ? "操作已展开" : "操作已收起")")
+                .accessibilityAction { interaction.reset(); model.path.append(item.id) }
+                .accessibilityAction(named: item.isStarred ? "取消星标" : "星标") { toggleStar() }
+                .accessibilityAction(named: "归档") { perform(.archive) }
+                .accessibilityAction(named: "删除") { perform(.delete) }
+                .offset(x: offset)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .homeHitRegion(.card(item.id), enabled: active)
     }
-    private var card: some View {
-        ItemCard(item: item)
-            .contentShape(Rectangle())
-            .gesture(LongPressGesture(minimumDuration: 0.45).exclusively(before: TapGesture()).onEnded { value in
-                switch value {
-                case .first: selected = item.id
-                case .second:
-                    if selected != nil { selected = nil } else { model.path.append(item.id) }
-                }
-            })
-            .accessibilityAddTraits(.isButton)
-            .accessibilityIdentifier("itemCard/\(item.kind.rawValue)/\(item.id.uuidString)")
-            .accessibilityAction { model.path.append(item.id) }
-            .accessibilityAction(named: item.isStarred ? "取消星标" : "星标") { model.attempt { try model.toggleStar(item.id) } }
-            .accessibilityAction(named: "归档") { perform(.archive) }
-            .accessibilityAction(named: "删除") { perform(.delete) }
-    }
+
     private var actions: some View {
-        VStack(spacing: 8) {
-            circle(item.isStarred ? "取消星标" : "星标", icon: item.isStarred ? "star.fill" : "star") {
-                model.attempt { try model.toggleStar(item.id) }
-            }
-            circle("归档", icon: "archivebox") { perform(.archive) }
-            circle("删除", icon: "trash") { perform(.delete) }
-        }
+        HStack(alignment: .center, spacing: 10) {
+            circle(item.isStarred ? "取消星标" : "星标", icon: item.isStarred ? "star.fill" : "star",
+                   color: Color(hex: 0x986015), key: "star", action: toggleStar)
+            circle("归档", icon: "archivebox", color: Color(hex: 0x247378), key: "archive") { perform(.archive) }
+            circle("删除", icon: "trash", color: Color(hex: 0xBD3F33), key: "delete") { perform(.delete) }
+        }.frame(width: HomeInteraction.railWidth)
     }
-    private func circle(_ label: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: icon).frame(width: 44, height: 44).background(.regularMaterial, in: Circle()) }
-            .buttonStyle(.plain).accessibilityLabel(label)
+
+    private func circle(_ label: String, icon: String, color: Color, key: String,
+                        action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                Image(systemName: icon).font(.system(size: 21, weight: .medium))
+                    .frame(width: 48, height: 48).foregroundStyle(.white).background(color, in: Circle())
+                Text(label).font(.caption2).multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            }.frame(width: 58).frame(minHeight: 80).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).accessibilityLabel(label)
+        .accessibilityIdentifier("itemAction/\(key)/\(item.id.uuidString)")
+        .homeHitRegion(.rowControl(item.id, key), enabled: active && opened)
+    }
+
+    private func toggleStar() {
+        if model.attempt({ try model.toggleStar(item.id) }) { settle { interaction.reset() } }
     }
     private func perform(_ action: LifecycleAction) {
-        if model.attempt({ try model.quickAction(item.id, action: action) }) { selected = nil }
+        if model.attempt({ try model.quickAction(item.id, action: action) }) { settle { interaction.reset() } }
     }
-}
-
-struct HomeBlankArea: View {
-    @Environment(AppModel.self) private var model
-    @Binding var selected: UUID?
-    var height: CGFloat = 90
-    var body: some View {
-        Color.clear.frame(height: height).contentShape(Rectangle())
-            .onTapGesture { selected = nil }
-            .gesture(DragGesture(minimumDistance: 35).onEnded { drag in
-                let x = drag.translation.width, y = drag.translation.height
-                guard drag.startLocation.x > 24, abs(x) > 60, abs(x) > abs(y) * 1.8 else { return }
-                selected = nil
-                if x < 0 { model.selectMode(.plan) } else { model.selectMode(.idea) }
-            })
-            .accessibilityHidden(true)
-    }
+    private func settle(_ action: () -> Void) { withAnimation(AppPalette.motion(reduced: reduceMotion), action) }
 }

@@ -1,47 +1,50 @@
 // 所属层级：L3 外交层（界面）
-// 文件职责：提供两模式色彩、稳定卡片和可关闭流动装饰。
-// 输入：模式、系统无障碍与电量；输出：纯视觉表现。
-// 依赖：SwiftUI；装饰不承载文本与交互。
+// 文件职责：两模式静态背景、表面和短交互动画。
+// 输入：模式、系统外观；输出：纯视觉表现。
+// 依赖：SwiftUI、资源色；装饰不参与命中或持续刷新。
 import SwiftUI
 
 enum AppPalette {
     static let teal = Color("IdeaAccent")
     static let red = Color("PlanAccent")
     static func accent(_ kind: ItemKind) -> Color { kind == .idea ? teal : red }
+    static func surface(_ kind: ItemKind, dark: Bool) -> Color {
+        dark ? Color(hex: kind == .idea ? 0x203A30 : 0x402F24) : .white
+    }
+    static func soft(_ kind: ItemKind, dark: Bool) -> Color {
+        Color(hex: dark ? (kind == .idea ? 0x294A3E : 0x563B29) : (kind == .idea ? 0xD3E8DF : 0xF3D9C5))
+    }
+    static func ink(dark: Bool) -> Color { Color(hex: dark ? 0xF1F4F2 : 0x202B27) }
+    static func motion(reduced: Bool) -> Animation? { reduced ? nil : .easeOut(duration: 0.22) }
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(red: Double((hex >> 16) & 255) / 255,
+                  green: Double((hex >> 8) & 255) / 255, blue: Double(hex & 255) / 255)
+    }
 }
 
 struct ModeBackground: View {
     let mode: ItemKind
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.scenePhase) private var scene
-    @State private var lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
-
     var body: some View {
-        ZStack {
-            (scheme == .dark ? Color(red: 0.08, green: 0.09, blue: 0.10) :
-                Color(red: 0.97, green: 0.96, blue: 0.95))
-            if mode == .idea && !reduceTransparency {
-                TimelineView(.animation(minimumInterval: 0.1, paused: reduceMotion || lowPower || scene != .active)) { context in
-                    let phase = reduceMotion || lowPower ? 0 : context.date.timeIntervalSinceReferenceDate / 7
-                    GeometryReader { geometry in
-                        ZStack {
-                            Circle().fill(Color(red: 0.61, green: 0.83, blue: 0.75))
-                                .frame(width: 280, height: 280)
-                                .offset(x: -110 + sin(phase) * 18, y: 20)
-                            Ellipse().fill(Color(red: 0.78, green: 0.72, blue: 0.90))
-                                .frame(width: 300, height: 350)
-                                .offset(x: geometry.size.width - 210, y: 260 + cos(phase) * 20)
-                        }
-                    }.blur(radius: 65).opacity(scheme == .dark ? 0.15 : 0.27)
-                }
-            }
-        }
-        .ignoresSafeArea().allowsHitTesting(false).accessibilityHidden(true)
-        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)) { _ in
-            lowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
-        }
+        let dark = scheme == .dark
+        let top: UInt32 = dark ? (mode == .idea ? 0x152922 : 0x302319) : (mode == .idea ? 0xDDEFE8 : 0xF7E4D4)
+        let bottom: UInt32 = dark ? top : (mode == .idea ? 0xF0F7F3 : 0xFFF4E8)
+        LinearGradient(colors: [Color(hex: top), Color(hex: bottom)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            .ignoresSafeArea().allowsHitTesting(false).accessibilityHidden(true)
+    }
+}
+
+struct ItemSurface: ViewModifier {
+    let kind: ItemKind
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        content.padding(18)
+            .foregroundStyle(AppPalette.ink(dark: scheme == .dark))
+            .background(AppPalette.surface(kind, dark: scheme == .dark), in: RoundedRectangle(cornerRadius: 22))
+            .overlay { RoundedRectangle(cornerRadius: 22).strokeBorder(.primary.opacity(0.04), lineWidth: 1) }
     }
 }
 
@@ -69,12 +72,5 @@ struct AppFeedback: ViewModifier {
 
 extension View {
     func appFeedback() -> some View { modifier(AppFeedback()) }
-    func itemCard(_ kind: ItemKind) -> some View {
-        self.padding(20)
-            .background(.background, in: RoundedRectangle(cornerRadius: kind == .idea ? 26 : 6))
-            .overlay {
-                RoundedRectangle(cornerRadius: kind == .idea ? 26 : 6)
-                    .strokeBorder(.primary.opacity(kind == .idea ? 0.05 : 0.17), lineWidth: 1)
-            }
-    }
+    func itemCard(_ kind: ItemKind) -> some View { modifier(ItemSurface(kind: kind)) }
 }

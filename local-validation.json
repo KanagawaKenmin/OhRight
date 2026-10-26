@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-10-26T05:57:30.104148+00:00",
+  "checkedAt": "2026-10-26T07:58:15.864401+00:00",
   "sourceVerification": {
-    "version": "0.3.0",
-    "build": "2",
-    "verifiedFiles": 104,
-    "manifestSHA256": "043e031af453d07d77dc5f409476eda5cbf40d9ec1ccd6f9e15ae699ce4e44a2",
+    "version": "0.4.0",
+    "build": "3",
+    "verifiedFiles": 111,
+    "manifestSHA256": "fc3cb974abbdd2ceb46f1f86d5a9c9808446ec895ccd405bfa94691072dcce26",
     "commit": null
   },
   "staticChecks": {
-    "checkedAt": "2026-10-26T05:53:57.710Z",
-    "swiftFiles": 79,
+    "checkedAt": "2026-10-26T07:58:15.491Z",
+    "swiftFiles": 86,
     "syntaxErrors": [],
     "bashScripts": 3,
     "yamlChecks": "passed",
@@ -22,26 +22,75 @@
     "passed": 27,
     "failed": 0
   },
-  "uiTestsDefined": 4,
-  "removed": [
-    "sound setting",
-    "notification audio",
-    "sound UI test",
-    "settings diagnostic workflow"
+  "colorContrast": [
+    {
+      "name": "idea button",
+      "ratio": 6.61
+    },
+    {
+      "name": "plan button",
+      "ratio": 6.23
+    },
+    {
+      "name": "idea dark button",
+      "ratio": 10.23
+    },
+    {
+      "name": "plan dark button",
+      "ratio": 9.74
+    },
+    {
+      "name": "idea tonal",
+      "ratio": 5.16
+    },
+    {
+      "name": "plan tonal",
+      "ratio": 4.61
+    },
+    {
+      "name": "idea dark tonal",
+      "ratio": 5.98
+    },
+    {
+      "name": "plan dark tonal",
+      "ratio": 5.95
+    },
+    {
+      "name": "card light",
+      "ratio": 14.62
+    },
+    {
+      "name": "idea dark card",
+      "ratio": 11.09
+    },
+    {
+      "name": "plan dark card",
+      "ratio": 11.49
+    }
   ],
-  "legacyDataFieldsPreserved": true,
-  "retiredTestPathOverwrittenWithComments": true,
+  "uiTestsDefined": 4,
+  "newGestureUnitTests": {
+    "defined": 5,
+    "executedLocally": false
+  },
+  "cloudCompiled": false,
+  "cloudTested": false,
+  "ipaGenerated": false,
+  "soundFeatureRemoved": true,
+  "legacyUploadPathsPreserved": true,
+  "domainAndPersistenceSourcesUnchanged": true,
   "limits": {
     "uiSeconds": 300,
     "verifyMinutes": 30,
     "packageMinutes": 45
   },
-  "latestUserCloudFeedback": {
-    "uiTestsPassed": 4,
-    "uiTestsFailed": 1,
-    "uiStageElapsedSeconds": 208.68,
-    "exitCode": 65
-  },
-  "newSourceCloudTested": false,
-  "newIPAGenerated": false
+  "newManifestPaths": [
+    "应用/L3_外交层/界面/共用/整行操作按钮.swift",
+    "应用/L3_外交层/界面/共用/记录格式工具.swift",
+    "应用/L3_外交层/界面/共用/首页手势状态.swift",
+    "应用/L3_外交层/界面/共用/首页模式列表.swift",
+    "应用/L3_外交层/界面/共用/首页模式选择.swift",
+    "应用/L3_外交层/界面/共用/首页横向手势.swift",
+    "测试/存储/首页手势状态测试.swift"
+  ]
 }

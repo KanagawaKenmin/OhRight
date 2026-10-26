@@ -1,4 +1,4 @@
-// 测试边界：验证长按后实际星标/归档撤销、转换取消与保存、历史/搜索范围。
+// 测试边界：验证卡片左滑后星标/归档撤销、转换取消与保存、历史/搜索范围。
 // 输入：独立内存 App；输出：实际结果断言；不冒充真机手势验收。
 import XCTest
 
@@ -22,33 +22,56 @@ final class ExperienceUITests: XCTestCase {
         return card
     }
 
-    @MainActor func testLongPressStarArchiveAndDeleteCanUndo() {
+    @MainActor func testSwipeStarArchiveAndDeleteCanUndo() {
         let app = open(), card = capture(app, text: "需要处理的琐事")
-        card.press(forDuration: 0.8)
+        let id = card.identifier.components(separatedBy: "/").last!
+        card.swipeLeft(velocity: .slow)
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.exists)
-        let star = app.buttons["星标"]
-        XCTAssertTrue(star.waitForExistence(timeout: 3)); star.tap()
-        XCTAssertTrue(app.buttons["取消星标"].waitForExistence(timeout: 3))
-        app.buttons["归档"].tap()
-        XCTAssertFalse(card.exists)
+        let star = app.buttons["itemAction/star/\(id)"]
+        require(star, in: app, stage: "卡片单次左滑展开星标"); star.tap()
+        wait(NSPredicate(format: "value CONTAINS %@", "已星标"), on: card, in: app, stage: "星标已保存")
+        card.swipeLeft(velocity: .slow)
+        XCTAssertEqual(app.buttons["itemAction/star/\(id)"].label, "取消星标")
+        let archive = app.buttons["itemAction/archive/\(id)"]
+        require(archive, in: app, stage: "左滑展开归档"); archive.tap()
+        wait(NSPredicate(format: "exists == false"), on: card, in: app, stage: "归档移出首页")
         app.buttons["撤销"].tap()
         XCTAssertTrue(card.waitForExistence(timeout: 3))
-        card.press(forDuration: 0.8); app.buttons["删除"].tap()
-        XCTAssertFalse(card.exists)
+        card.swipeLeft(velocity: .slow)
+        let delete = app.buttons["itemAction/delete/\(id)"]
+        require(delete, in: app, stage: "左滑展开删除"); delete.tap()
+        wait(NSPredicate(format: "exists == false"), on: card, in: app, stage: "删除移出首页")
         app.buttons["撤销"].tap()
         XCTAssertTrue(card.waitForExistence(timeout: 3))
         card.tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.waitForExistence(timeout: 3))
     }
 
+    @MainActor private func require(_ element: XCUIElement, in app: XCUIApplication, stage: String) {
+        wait(NSPredicate(format: "exists == true AND hittable == true"), on: element, in: app, stage: stage)
+    }
+
+    @MainActor private func wait(_ predicate: NSPredicate, on element: XCUIElement, in app: XCUIApplication, stage: String) {
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        guard XCTWaiter.wait(for: [expectation], timeout: 4) != .completed else { return }
+        let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = stage; screenshot.lifetime = .keepAlways
+        let tree = XCTAttachment(string: app.debugDescription); tree.name = "失败界面树"; tree.lifetime = .keepAlways
+        add(screenshot); add(tree)
+        print("UI verification failure: \(stage)\n\(app.debugDescription)")
+        XCTFail(stage)
+    }
+
     @MainActor func testConversionCancelThenSaveKeepsTitleAndIdentity() {
         let app = open(), card = capture(app, text: "从琐事开始")
         let id = card.identifier.components(separatedBy: "/").last!
         card.tap()
-        app.buttons["转为计划"].tap()
+        let convert = app.buttons["convertToPlan"]
+        XCTAssertGreaterThan(convert.frame.width, app.frame.width * 0.75)
+        XCTAssertGreaterThanOrEqual(convert.frame.height, 52)
+        convert.tap()
         app.navigationBars["转为计划"].buttons["关闭"].tap()
         XCTAssertTrue(app.navigationBars["琐事"].waitForExistence(timeout: 3))
-        app.buttons["转为计划"].tap()
+        app.buttons["convertToPlan"].tap()
         app.buttons["saveItem"].tap()
         XCTAssertTrue(app.navigationBars["计划"].waitForExistence(timeout: 3))
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.label, "从琐事开始")

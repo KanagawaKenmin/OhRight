@@ -32,19 +32,14 @@ struct ItemEditorView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
-                    Toggle("Markdown 格式", isOn: Binding(get: { draft.textFormat == .markdown },
-                        set: { draft.textFormat = $0 ? .markdown : .plain }))
-                    Toggle("预览", isOn: $preview)
+                    PhotoAttachmentEditor(attachments: $draft.attachments, working: $importingPhoto,
+                        existingCount: itemID.flatMap { model.item($0) }?.entries.flatMap(\.attachments).count ?? 0,
+                        kind: kind, format: $draft.textFormat, preview: $preview, persist: persistDraft)
                     if preview {
                         let lines = draft.text.components(separatedBy: "\n")
                         Text(lines.first ?? "").font(.headline)
                         BodyReader(source: lines.dropFirst().joined(separator: "\n"), format: draft.textFormat)
                     }
-                }
-                Section("图片") {
-                    PhotoAttachmentEditor(attachments: $draft.attachments, working: $importingPhoto,
-                        existingCount: itemID.flatMap { model.item($0) }?.entries.flatMap(\.attachments).count ?? 0,
-                        persist: persistDraft)
                 }
                 if kind == .plan { planFields }
                 Section("可选") {
@@ -55,6 +50,7 @@ struct ItemEditorView: View {
                         .font(.caption).foregroundStyle(.secondary) }
                 }
             }
+            .scrollContentBackground(.hidden).background { ModeBackground(mode: kind) }
             .navigationTitle(isConversion ? "转为计划" : itemID == nil ? (kind == .idea ? "记一下" : "新计划") : "编辑")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

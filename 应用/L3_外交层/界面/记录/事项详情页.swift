@@ -14,6 +14,7 @@ struct ItemDetailView: View {
     @State private var importingPhoto = false
     @State private var editingEntry: ItemEntry?
     @State private var confirmPermanent = false
+    @ScaledMetric(relativeTo: .title) private var titleSize = 28.0
 
     var body: some View {
         Group {
@@ -26,19 +27,18 @@ struct ItemDetailView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(item.kind == .idea ? "又想到一点" : "记下这次进展").font(.headline)
                                 TextField(item.kind == .idea ? "补一句就好…" : "完成了什么，或卡在哪里？", text: $entryDraft.text, axis: .vertical)
-                                    .lineLimit(3...8).padding(14).background(.background, in: RoundedRectangle(cornerRadius: 12))
-                                Button(item.kind == .idea ? "添加记录" : "保存进展") {
-                                    if model.attempt({ try model.appendDraft(id, draft: entryDraft) }) { entryDraft = CaptureDraft() }
-                                }.buttonStyle(.borderedProminent).foregroundStyle(Color("OnAccent"))
-                                    .disabled(importingPhoto || entryDraft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                                Toggle("Markdown 格式", isOn: Binding(get: { entryDraft.textFormat == .markdown },
-                                    set: { entryDraft.textFormat = $0 ? .markdown : .plain }))
-                                Toggle("预览", isOn: $entryPreview)
-                                if entryPreview { BodyReader(source: entryDraft.text, format: entryDraft.textFormat) }
+                                    .lineLimit(4...10).font(.body).frame(minHeight: 112, alignment: .topLeading)
+                                    .accessibilityIdentifier("entryText")
                                 PhotoAttachmentEditor(attachments: $entryDraft.attachments, working: $importingPhoto,
                                     existingCount: item.attachments.count + item.entries.flatMap(\.attachments).count,
-                                    persist: persistEntry)
-                            }
+                                    kind: item.kind, format: $entryDraft.textFormat, preview: $entryPreview, persist: persistEntry)
+                                if entryPreview { BodyReader(source: entryDraft.text, format: entryDraft.textFormat) }
+                                Button(item.kind == .idea ? "添加记录" : "保存进展") {
+                                    if model.attempt({ try model.appendDraft(id, draft: entryDraft) }) { entryDraft = CaptureDraft() }
+                                }.buttonStyle(FullWidthActionStyle(kind: item.kind, prominent: true))
+                                    .accessibilityIdentifier("appendEntry")
+                                    .disabled(importingPhoto || entryDraft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }.frame(maxWidth: .infinity, alignment: .leading).itemCard(item.kind)
                             lifecycleButtons(item)
                         } else {
                             Button("从回收站恢复") { model.attempt { try model.lifecycle(id, action: .restore) } }
@@ -110,18 +110,18 @@ struct ItemDetailView: View {
 
     private func header(_ item: Item) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(item.title).font(.largeTitle.weight(item.kind == .idea ? .medium : .bold)).textSelection(.enabled)
+            Text(item.title).font(.system(size: titleSize, weight: .semibold)).textSelection(.enabled)
                 .accessibilityIdentifier("itemDetailTitle")
+            Text(item.status.label).font(.caption.weight(.semibold)).foregroundStyle(AppPalette.accent(item.kind))
             if !item.body.isEmpty { BodyReader(source: item.body, format: item.textFormat) }
             AttachmentGallery(attachments: item.attachments)
             if let due = item.deadline {
                 Label("\(due.label) · \(due.timeZoneID)", systemImage: "calendar").font(.subheadline).foregroundStyle(.secondary)
                 if due.boundary <= Date() && item.status == .active { Text("已经过期，可以继续、改期，或先归档。").font(.caption) }
             }
-            Text(item.status.label).font(.caption.weight(.semibold)).foregroundStyle(AppPalette.accent(item.kind))
             if item.kind == .idea && item.status == .active {
                 Button("转为计划", systemImage: "calendar.badge.plus") { editorKind = .plan }
-                    .buttonStyle(.bordered).frame(minHeight: 44)
+                    .buttonStyle(FullWidthActionStyle(kind: item.kind)).accessibilityIdentifier("convertToPlan")
             }
             if !item.nextAction.isEmpty { Text("下一步：\(item.nextAction)").font(.headline) }
             if let until = item.mutedUntil, until > Date() { Text("暂放到 \(until.formatted(date: .abbreviated, time: .omitted))").font(.caption) }
@@ -130,15 +130,17 @@ struct ItemDetailView: View {
     }
 
     private func lifecycleButtons(_ item: Item) -> some View {
-        HStack {
+        VStack(spacing: 8) {
             if [.completed, .archived].contains(item.status) {
-                Button("重新开始") { model.attempt { try model.lifecycle(id, action: .reopen) } }
+                Button("重新开始", systemImage: "arrow.counterclockwise") { model.attempt { try model.lifecycle(id, action: .reopen) } }
+                    .buttonStyle(FullWidthActionStyle(kind: item.kind))
             } else {
-                Button("做到了") { model.attempt { try model.lifecycle(id, action: .complete) } }.buttonStyle(.bordered)
+                Button("做到了", systemImage: "checkmark") { model.attempt { try model.lifecycle(id, action: .complete) } }
+                    .buttonStyle(FullWidthActionStyle(kind: item.kind)).accessibilityIdentifier("completeItem")
                 if item.kind == .plan {
                     Button(item.status == .paused ? "恢复计划" : "先暂停") {
                         model.attempt { try model.lifecycle(id, action: item.status == .paused ? .resume : .pause) }
-                    }
+                    }.frame(minHeight: 44)
                 }
             }
         }

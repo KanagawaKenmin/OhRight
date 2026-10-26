@@ -11,9 +11,17 @@ final class ModeUITests: XCTestCase {
         app.launch()
         captureAndVerify(app, kind: "idea", text: "A small spark", screenshotName: "琐事模式")
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        let plans = app.segmentedControls.buttons["计划"]
-        require(plans, in: app, stage: "返回首页并切换计划")
-        plans.tap()
+        let title = app.staticTexts["homeTitle"]
+        require(title, in: app, stage: "返回首页标题区域")
+        // 起点在大标题所在行的非按钮区，明确覆盖分段选择以外的页面手势。
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let y = title.frame.midY - app.frame.minY
+        let start = origin.withOffset(CGVector(dx: app.frame.width * 0.78, dy: y))
+        let end = origin.withOffset(CGVector(dx: app.frame.width * 0.22, dy: y))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "已选中"),
+                                                object: app.buttons["homeMode/plan"])
+        if XCTWaiter.wait(for: [selected], timeout: 4) != .completed { fail(app, stage: "标题区域左滑应切换计划") }
         captureAndVerify(app, kind: "plan", text: "Prepare materials", screenshotName: "计划模式")
     }
 

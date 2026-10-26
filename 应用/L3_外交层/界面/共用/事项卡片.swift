@@ -19,6 +19,7 @@ enum PlanSection: String, CaseIterable, Identifiable {
 
 struct ItemCard: View {
     let item: Item
+    var minimumHeight: CGFloat = 0
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if item.isStarred { Label("星标", systemImage: "star.fill").font(.caption).foregroundStyle(.secondary) }
@@ -29,7 +30,7 @@ struct ItemCard: View {
                     if item.status != .active { Text(item.status.label).font(.caption) }
                 }
             }
-            Text(item.title).font(.title3.weight(item.kind == .idea ? .medium : .bold))
+            Text(item.title).font(.system(.title3, design: .default, weight: .semibold))
                 .foregroundStyle(.primary).multilineTextAlignment(.leading).lineLimit(3)
             if item.kind == .plan && !item.nextAction.isEmpty {
                 Text("下一步：\(item.nextAction)").font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
@@ -46,7 +47,7 @@ struct ItemCard: View {
                 Label("暂不提醒", systemImage: "bell.slash").font(.caption).foregroundStyle(.secondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading).itemCard(item.kind)
+        .frame(maxWidth: .infinity, minHeight: minimumHeight, alignment: .leading).itemCard(item.kind)
         .accessibilityElement(children: .combine)
     }
 }

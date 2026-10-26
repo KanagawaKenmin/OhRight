@@ -15,19 +15,18 @@ struct EntryEditorView: View {
     @State private var saved = false
     @State private var importingPhoto = false
     private var draftKey: String { "entryEdit/\(itemID)/\(entry.id)" }
+    private var kind: ItemKind { model.item(itemID)?.kind ?? .idea }
     var body: some View {
         NavigationStack {
             Form {
                 TextEditor(text: $draft.text).frame(minHeight: 220).accessibilityLabel("记录内容")
-                Toggle("Markdown 格式", isOn: Binding(get: { draft.textFormat == .markdown },
-                    set: { draft.textFormat = $0 ? .markdown : .plain }))
-                Toggle("预览", isOn: $preview)
-                if preview { BodyReader(source: draft.text, format: draft.textFormat) }
                 PhotoAttachmentEditor(attachments: $draft.attachments, working: $importingPhoto,
                     existingCount: (model.item(itemID)?.attachments.count ?? 0) +
                         (model.item(itemID)?.entries.filter { $0.id != entry.id }.flatMap(\.attachments).count ?? 0),
-                    persist: persist)
+                    kind: kind, format: $draft.textFormat, preview: $preview, persist: persist)
+                if preview { BodyReader(source: draft.text, format: draft.textFormat) }
             }
+                .scrollContentBackground(.hidden).background { ModeBackground(mode: kind) }
                 .navigationTitle("修正记录").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() }.disabled(importingPhoto) }
@@ -46,7 +45,7 @@ struct EntryEditorView: View {
                 }
                 .onChange(of: draft) { _, _ in persist() }
                 .onDisappear { persist() }.interactiveDismissDisabled(importingPhoto).appFeedback()
-        }
+        }.tint(AppPalette.accent(kind))
     }
     private func persist() { if loaded && !saved { model.saveDraft(draft, key: draftKey) } }
 }
