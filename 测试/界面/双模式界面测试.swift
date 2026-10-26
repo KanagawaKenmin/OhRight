@@ -19,9 +19,13 @@ final class ModeUITests: XCTestCase {
         let start = origin.withOffset(CGVector(dx: app.frame.width * 0.78, dy: y))
         let end = origin.withOffset(CGVector(dx: app.frame.width * 0.22, dy: y))
         start.press(forDuration: 0.05, thenDragTo: end)
-        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "已选中"),
-                                                object: app.buttons["homeMode/plan"])
-        if XCTWaiter.wait(for: [selected], timeout: 4) != .completed { fail(app, stage: "标题区域左滑应切换计划") }
+        // 检查模式实际驱动的入口，再由后续计划录入验证类别；不依赖朗读 value 的字符串表现。
+        let capture = app.buttons["capturePrimary"]
+        let switched = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "新计划"), object: capture)
+        if XCTWaiter.wait(for: [switched], timeout: 4) != .completed {
+            let plan = app.buttons["homeMode/plan"]
+            fail(app, stage: "标题区域左滑应切换计划；入口=\(capture.label)；计划已选=\(plan.isSelected)；value=\(String(describing: plan.value))；y=\(y)")
+        }
         captureAndVerify(app, kind: "plan", text: "Prepare materials", screenshotName: "计划模式")
     }
 

@@ -1,14 +1,14 @@
 {
-  "checkedAt": "2026-10-26T12:05:12.582470+00:00",
+  "checkedAt": "2026-10-26T12:24:17.004721+00:00",
   "sourceVerification": {
-    "version": "0.4.1",
-    "build": "4",
+    "version": "0.4.2",
+    "build": "5",
     "verifiedFiles": 113,
-    "manifestSHA256": "0e33e39c06852fcd4f2a5b4cafa11e857be323cce74497bed991595eca0c35ee",
+    "manifestSHA256": "debe22438b144e2f99f92d522d3acd12cb572b352792eb350456d87f8745266c",
     "commit": null
   },
   "staticChecks": {
-    "checkedAt": "2026-10-26T12:05:12.270Z",
+    "checkedAt": "2026-10-26T12:22:46.855Z",
     "swiftFiles": 86,
     "syntaxErrors": [],
     "gestureInterfaceChecks": "direct bridged calls checked",
@@ -27,7 +27,7 @@
     "passed": 5,
     "failed": 0
   },
-  "originalPackageReplay": {
+  "priorCompilerFixReplay": {
     "originalPackage": "0.4.0 (3)",
     "originalErrors": [
       {
@@ -38,6 +38,15 @@
     ],
     "fixedPackage": "0.4.1 (4)",
     "currentErrors": []
+  },
+  "latestUserCloudFeedback": {
+    "version": "0.4.1 (4)",
+    "compiled": true,
+    "uiExecuted": 4,
+    "uiPassed": 3,
+    "uiFailed": 1,
+    "uiStageSeconds": 223.454,
+    "exitCode": 65
   },
   "colorContrast": [
     {
@@ -101,8 +110,5 @@
     "verifyMinutes": 30,
     "packageMinutes": 45
   },
-  "newManifestPaths": [
-    "构建/检查手势接口.cjs",
-    "测试/构建/手势接口检查测试.cjs"
-  ]
+  "newManifestPaths": []
 }

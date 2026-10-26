@@ -55,6 +55,8 @@ struct HomeView: View {
     private var gestureContent: some View {
         GeometryReader { geometry in
             canvas(width: geometry.size.width)
+                // 标题旁 Spacer、列表间隙等透明内容也属于整页滑动区域。
+                .contentShape(.interaction, Rectangle())
                 .coordinateSpace(name: "homeGestures")
                 .onPreferenceChange(HomeHitRegions.self) { regions = $0 }
                 .gesture(panGesture(width: geometry.size.width))
@@ -80,7 +82,8 @@ struct HomeView: View {
     }
 
     private var backgroundTap: HomeBackgroundTap {
-        HomeBackgroundTap(regions: regions, enabled: acceptsGesture) {
+        // 只有展开卡片时才需要空白点击收起，普通页面拖动不引入第二个候选识别器。
+        HomeBackgroundTap(regions: regions, enabled: acceptsGesture && interaction.openedItemID != nil) {
             withAnimation(AppPalette.motion(reduced: reduceMotion)) { interaction.reset() }
         }
     }
