@@ -18,6 +18,9 @@ import Observation
             let inMemory = false
             #endif
             model = try NotificationRouter.shared.resolveModel(inMemory: inMemory)
+            #if DEBUG
+            if inMemory, let model { try UITestScenario.prepare(model, arguments: ProcessInfo.processInfo.arguments) }
+            #endif
             error = nil
         } catch { self.error = error.localizedDescription }
     }

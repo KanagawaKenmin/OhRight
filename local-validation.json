@@ -1,15 +1,15 @@
 {
-  "checkedAt": "2026-10-26T12:24:17.004721+00:00",
+  "checkedAt": "2026-10-26T12:54:07.312505+00:00",
   "sourceVerification": {
-    "version": "0.4.2",
-    "build": "5",
-    "verifiedFiles": 113,
-    "manifestSHA256": "debe22438b144e2f99f92d522d3acd12cb572b352792eb350456d87f8745266c",
+    "version": "0.4.3",
+    "build": "6",
+    "verifiedFiles": 115,
+    "manifestSHA256": "641d3d7440388cddfbc52b78b68aea4085a40b41ba6f11e62b142cc20d823a04",
     "commit": null
   },
   "staticChecks": {
-    "checkedAt": "2026-10-26T12:22:46.855Z",
-    "swiftFiles": 86,
+    "checkedAt": "2026-10-26T12:51:12.339Z",
+    "swiftFiles": 88,
     "syntaxErrors": [],
     "gestureInterfaceChecks": "direct bridged calls checked",
     "bashScripts": 3,
@@ -40,13 +40,18 @@
     "currentErrors": []
   },
   "latestUserCloudFeedback": {
-    "version": "0.4.1 (4)",
-    "compiled": true,
-    "uiExecuted": 4,
-    "uiPassed": 3,
-    "uiFailed": 1,
-    "uiStageSeconds": 223.454,
-    "exitCode": 65
+    "version": "0.4.2 (5)",
+    "uiStageSeconds": 300,
+    "exitCode": 124,
+    "modeGestureReached": false
+  },
+  "uiPreparationRounds": {
+    "before": 5,
+    "after": 2
+  },
+  "fixtureUnitTests": {
+    "defined": 2,
+    "executedLocally": false
   },
   "colorContrast": [
     {
@@ -110,5 +115,8 @@
     "verifyMinutes": 30,
     "packageMinutes": 45
   },
-  "newManifestPaths": []
+  "newManifestPaths": [
+    "应用/L3_外交层/跨模块流程/界面测试场景.swift",
+    "测试/存储/界面场景隔离测试.swift"
+  ]
 }

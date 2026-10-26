@@ -3,30 +3,25 @@
 import XCTest
 
 final class ExperienceUITests: XCTestCase {
-    @MainActor private func open() -> XCUIApplication {
+    @MainActor private func open(fixture: String) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--uitest", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["--uitest", "--uitest-fixture=\(fixture)", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
         app.launch()
         return app
     }
 
-    @MainActor private func capture(_ app: XCUIApplication, text: String) -> XCUIElement {
-        let add = app.buttons["capturePrimary"]
-        XCTAssertTrue(add.waitForExistence(timeout: 10)); add.tap()
-        let field = app.descendants(matching: .any).matching(identifier: "itemText").firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap(); field.typeText(text)
-        app.buttons["saveItem"].tap()
-        let card = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "itemCard/idea/")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 5))
+    @MainActor private func fixtureCard(_ app: XCUIApplication) -> XCUIElement {
+        let card = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "itemCard/idea/")).firstMatch
+        require(card, in: app, stage: "隔离场景记录已准备")
         return card
     }
 
     @MainActor func testSwipeStarArchiveAndDeleteCanUndo() {
-        let app = open(), card = capture(app, text: "需要处理的琐事")
+        let app = open(fixture: "quick-actions"), card = fixtureCard(app)
         let id = card.identifier.components(separatedBy: "/").last!
         card.swipeLeft(velocity: .slow)
-        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["itemDetailTitle"].firstMatch.exists)
         let star = app.buttons["itemAction/star/\(id)"]
         require(star, in: app, stage: "卡片单次左滑展开星标"); star.tap()
         wait(NSPredicate(format: "value CONTAINS %@", "已星标"), on: card, in: app, stage: "星标已保存")
@@ -44,7 +39,7 @@ final class ExperienceUITests: XCTestCase {
         app.buttons["撤销"].tap()
         XCTAssertTrue(card.waitForExistence(timeout: 3))
         card.tap()
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["itemDetailTitle"].firstMatch.waitForExistence(timeout: 3))
     }
 
     @MainActor private func require(_ element: XCUIElement, in app: XCUIApplication, stage: String) {
@@ -62,7 +57,7 @@ final class ExperienceUITests: XCTestCase {
     }
 
     @MainActor func testConversionCancelThenSaveKeepsTitleAndIdentity() {
-        let app = open(), card = capture(app, text: "从琐事开始")
+        let app = open(fixture: "conversion"), card = fixtureCard(app)
         let id = card.identifier.components(separatedBy: "/").last!
         card.tap()
         let convert = app.buttons["convertToPlan"]
@@ -74,15 +69,15 @@ final class ExperienceUITests: XCTestCase {
         app.buttons["convertToPlan"].tap()
         app.buttons["saveItem"].tap()
         XCTAssertTrue(app.navigationBars["计划"].waitForExistence(timeout: 3))
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch.label, "从琐事开始")
+        XCTAssertEqual(app.staticTexts["itemDetailTitle"].firstMatch.label, "从琐事开始")
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        let converted = app.descendants(matching: .any).matching(identifier: "itemCard/plan/\(id)").firstMatch
+        let converted = app.buttons.matching(identifier: "itemCard/plan/\(id)").firstMatch
         XCTAssertTrue(converted.waitForExistence(timeout: 3))
     }
 
     @MainActor func testHistoryExcludesActiveAndSearchIncludesIt() {
-        let app = open()
-        _ = capture(app, text: "只在搜索里出现")
+        let app = open(fixture: "library")
+        _ = fixtureCard(app)
         app.buttons["更多"].tap(); app.buttons["历史记录"].tap()
         XCTAssertTrue(app.navigationBars["历史记录"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.staticTexts["只在搜索里出现"].exists)

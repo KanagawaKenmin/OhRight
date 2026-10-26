@@ -7,9 +7,9 @@ final class ModeUITests: XCTestCase {
     @MainActor func testCaptureAndBothModes() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--uitest"]
+        app.launchArguments = ["--uitest", "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
         app.launch()
-        captureAndVerify(app, kind: "idea", text: "A small spark", screenshotName: "琐事模式")
+        captureAndVerify(app, kind: "idea", text: "Spark", screenshotName: "琐事模式")
         app.navigationBars.buttons.element(boundBy: 0).tap()
         let title = app.staticTexts["homeTitle"]
         require(title, in: app, stage: "返回首页标题区域")
@@ -26,7 +26,7 @@ final class ModeUITests: XCTestCase {
             let plan = app.buttons["homeMode/plan"]
             fail(app, stage: "标题区域左滑应切换计划；入口=\(capture.label)；计划已选=\(plan.isSelected)；value=\(String(describing: plan.value))；y=\(y)")
         }
-        captureAndVerify(app, kind: "plan", text: "Prepare materials", screenshotName: "计划模式")
+        captureAndVerify(app, kind: "plan", text: "Plan", screenshotName: "计划模式")
     }
 
     // 按卡片标识定位后进入详情核对原文，不能依赖合并节点中的独立 StaticText。
@@ -35,21 +35,18 @@ final class ModeUITests: XCTestCase {
         let capture = app.buttons["capturePrimary"]
         require(capture, in: app, stage: "\(kind)：打开记录入口")
         capture.tap()
-        let field = app.descendants(matching: .any).matching(identifier: "itemText").firstMatch
+        let field = app.textFields["itemText"].firstMatch
         require(field, in: app, stage: "\(kind)：显示输入框")
         field.tap()
         field.typeText(text)
-        guard field.value as? String == text else {
-            fail(app, stage: "\(kind)：输入内容不一致，实际值：\(String(describing: field.value))")
-            return
-        }
+        // 保存后的详情完整标题已验证输入结果，不再为同一内容额外请求一次输入框快照。
         app.buttons["saveItem"].tap()
-        let card = app.descendants(matching: .any).matching(
+        let card = app.buttons.matching(
             NSPredicate(format: "identifier BEGINSWITH %@", "itemCard/\(kind)/")).firstMatch
         require(card, in: app, stage: "\(kind)：保存后显示对应类别卡片")
         attach(app, name: screenshotName)
         card.tap()
-        let title = app.descendants(matching: .any).matching(identifier: "itemDetailTitle").firstMatch
+        let title = app.staticTexts["itemDetailTitle"].firstMatch
         require(title, in: app, stage: "\(kind)：打开保存的事项详情")
         guard title.label == text else {
             fail(app, stage: "\(kind)：保存后标题不一致，实际标题：\(title.label)")
