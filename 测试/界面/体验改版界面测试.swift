@@ -1,4 +1,4 @@
-// 测试边界：验证长按后实际星标/归档撤销、转换取消与保存、即时设置。
+// 测试边界：验证长按后实际星标/归档撤销、转换取消与保存、历史/搜索范围。
 // 输入：独立内存 App；输出：实际结果断言；不冒充真机手势验收。
 import XCTest
 
@@ -57,7 +57,7 @@ final class ExperienceUITests: XCTestCase {
         XCTAssertTrue(converted.waitForExistence(timeout: 3))
     }
 
-    @MainActor func testSettingsSaveImmediatelyAndHistoryExcludesActive() {
+    @MainActor func testHistoryExcludesActiveAndSearchIncludesIt() {
         let app = open()
         _ = capture(app, text: "只在搜索里出现")
         app.buttons["更多"].tap(); app.buttons["历史记录"].tap()
@@ -67,18 +67,5 @@ final class ExperienceUITests: XCTestCase {
         app.buttons["更多"].tap(); app.buttons["搜索"].tap()
         XCTAssertTrue(app.staticTexts["只在搜索里出现"].waitForExistence(timeout: 3))
         app.buttons["完成"].tap()
-        app.buttons["更多"].tap(); app.buttons["设置"].tap()
-        app.buttons["notificationSettings"].tap()
-        let sound = app.switches["声音"]
-        if !sound.isHittable { app.swipeUp() }
-        XCTAssertTrue(sound.waitForExistence(timeout: 3))
-        let before = sound.value as? String
-        sound.tap()
-        XCTAssertNotEqual(sound.value as? String, before)
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.buttons["关闭"].tap()
-        app.buttons["更多"].tap(); app.buttons["设置"].tap(); app.buttons["notificationSettings"].tap()
-        if !sound.isHittable { app.swipeUp() }
-        XCTAssertNotEqual(sound.value as? String, before)
     }
 }

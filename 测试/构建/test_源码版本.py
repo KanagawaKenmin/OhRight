@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 from 临时工作区 import TemporaryWorkspace
 
 spec = importlib.util.spec_from_file_location('source_verification', Path(__file__).resolve().parents[2] / '构建/检查源码版本.py')
@@ -28,6 +29,12 @@ class SourceVersionTests(unittest.TestCase):
 
     def test_complete_upload_matches(self):
         self.assertEqual(source.verify(self.root)['version'], '0.3.0')
+
+    def test_fingerprint_and_ci_commit_are_reported(self):
+        with patch.dict(source.os.environ, {'CM_COMMIT': 'a' * 40}):
+            result = source.verify(self.root)
+        self.assertEqual(result['commit'], 'a' * 40)
+        self.assertEqual(result['manifestSHA256'], source.digest(self.root / source.MANIFEST))
 
     def test_old_file_replacement_fails_with_changed_path(self):
         (self.root / '应用/事项.swift').write_text('// old implementation\n')

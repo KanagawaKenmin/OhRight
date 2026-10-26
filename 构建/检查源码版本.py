@@ -4,13 +4,14 @@
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
 import unicodedata
 
 
-TEXT_SUFFIXES = {'.swift', '.py', '.sh', '.yml', '.env', '.json', '.plist', '.xcprivacy', '.svg'}
+TEXT_SUFFIXES = {'.swift', '.py', '.sh', '.yml', '.yaml', '.cjs', '.env', '.json', '.plist', '.xcprivacy', '.svg'}
 MANIFEST = '构建/源码清单.json'
 
 
@@ -54,7 +55,11 @@ def verify(root):
     if (version, build) != (manifest['version'], manifest['build']):
         raise RuntimeError('Source manifest and project versions differ')
     print(f'Source version verified: {version} ({build}); {len(actual)} files match delivery manifest.', flush=True)
-    return {'version': version, 'build': build, 'verifiedFiles': len(actual)}
+    fingerprint = digest(root / MANIFEST)
+    commit = os.environ.get('CM_COMMIT') or os.environ.get('GITHUB_SHA')
+    print(f'Source manifest fingerprint: {fingerprint}; commit: {commit or "unavailable"}', flush=True)
+    return {'version': version, 'build': build, 'verifiedFiles': len(actual),
+            'manifestSHA256': fingerprint, 'commit': commit}
 
 
 if __name__ == '__main__':

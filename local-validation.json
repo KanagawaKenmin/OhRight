@@ -1,10 +1,17 @@
 {
-  "checkedAt": "2026-10-24T05:11:04.013450+00:00",
+  "checkedAt": "2026-10-24T08:26:06.488805+00:00",
   "version": "0.3.0",
   "build": 2,
+  "sourceVerification": {
+    "version": "0.3.0",
+    "build": "2",
+    "verifiedFiles": 104,
+    "manifestSHA256": "5c2a3214d90e5b83e7a68cb4d73cf8cdac7c1c75b4e3319b72143823ac33d01d",
+    "commit": null
+  },
   "staticChecks": {
-    "checkedAt": "2026-10-24T05:10:27.256Z",
-    "swiftFiles": 78,
+    "checkedAt": "2026-10-24T08:20:05.603Z",
+    "swiftFiles": 79,
     "syntaxErrors": [],
     "bashScripts": 3,
     "yamlChecks": "passed",
@@ -13,28 +20,45 @@
       "Grammar parsing only; Swift type checking, unit execution and iOS build require the macOS workflow."
     ]
   },
-  "sourceVerification": {
-    "version": "0.3.0",
-    "build": "2",
-    "verifiedFiles": 98
-  },
   "buildOrchestrationTests": {
-    "passed": 16,
-    "failed": 0,
-    "log": "build/build-script-tests-runtime-fix.log"
+    "passed": 27,
+    "failed": 0
   },
-  "pythonFilesParsed": 7,
-  "swiftFilesUnchangedFromCloudPassedSource": 78,
-  "previousCloudBuild": {
-    "index": 9,
-    "commit": "df21729",
-    "coreTestsPassed": 49,
-    "sourceVersionVerified": true,
-    "failure": "simctl list runtimes --json timed out after 30 seconds",
-    "deviceCreated": false,
-    "log": "build/artifacts/core_and_simulator_checks-verify9-df21729.log"
+  "logReplay": {
+    "primaryFailure": "assertion_failure",
+    "termination": "timeout",
+    "originalExitCode": 124,
+    "firstError": "/Users/builder/clone/测试/界面/体验改版界面测试.swift:77: error: -[OhRightUITests.ExperienceUITests testSettingsSaveImmediatelyAndHistoryExcludesActive] : XCTAssertNotEqual failed: (\"Optional(\"0\")\") is equal to (\"Optional(\"0\")\")"
   },
-  "runtimeRecoveryVerifiedOnCloud": false,
-  "appSimulatorBuildPassed": false,
+  "changedOrAddedSource": [
+    "codemagic.yaml",
+    "应用/L3_外交层/界面/设置/通知与提醒页.swift",
+    "构建/失败摘要.py",
+    "构建/收集崩溃报告.py",
+    "构建/检查源码版本.py",
+    "构建/静态检查.cjs",
+    "构建/验证工程.sh",
+    "测试/构建/test_失败诊断.py",
+    "测试/构建/test_源码版本.py",
+    "测试/构建/test_阶段预算.py",
+    "测试/界面/体验改版界面测试.swift",
+    "测试/界面/提醒设置界面测试.swift"
+  ],
+  "coreAndStorageSourcesUnchanged": true,
+  "previousCloudResults": {
+    "log": "core_and_simulator_checks-20261024-ui-sound.log",
+    "corePassed": 49,
+    "iosCorePassed": 48,
+    "storageAndCoordinatorPassed": 11,
+    "simulatorBuildAndBootPassed": true,
+    "uiPassed": 3,
+    "uiFailed": 1
+  },
+  "currentUIStates": {
+    "defined": 5,
+    "executedOnCloud": false
+  },
+  "currentSwiftTypeCheckExecuted": false,
+  "currentFullVerifyPassed": false,
   "newIPAGenerated": false
 }

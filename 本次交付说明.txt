@@ -1,0 +1,4 @@
+版本 0.3.0（2）。请把解压后内层文件夹里的内容上传到现有仓库根目录。
+先运行 diagnose-settings；通过后运行完整 verify，再 package-personal。
+设置诊断成功不代表完整验证成功。本包未生成 IPA，新的 UI 尚待云端复测。
+源码清单指纹：5c2a3214d90e5b83e7a68cb4d73cf8cdac7c1c75b4e3319b72143823ac33d01d

@@ -4,7 +4,7 @@ workflows:
   verify:
     name: OhRight - Verify
     instance_type: mac_mini_m2
-    max_build_duration: 30
+    max_build_duration: 45
     environment:
       xcode: "26.0"
     scripts:
@@ -21,7 +21,7 @@ workflows:
   package-personal:
     name: OhRight - Personal unsigned IPA
     instance_type: mac_mini_m2
-    max_build_duration: 45
+    max_build_duration: 60
     environment:
       xcode: "26.0"
     scripts:
@@ -33,6 +33,23 @@ workflows:
         script: bash 构建/打包个人版.sh
     artifacts:
       - build/artifacts/*
+      - build/*.log
+      - build/*.txt
+      - build/*.json
+      - build/*.xcresult
+      - build/crash-reports/*
+  diagnose-settings:
+    name: OhRight - Settings diagnostic
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      xcode: "26.0"
+    scripts:
+      - name: Prepare pinned project
+        script: bash 构建/准备工程.sh
+      - name: Diagnose settings UI only
+        script: bash 构建/验证工程.sh --settings-ui-only
+    artifacts:
       - build/*.log
       - build/*.txt
       - build/*.json

@@ -39,7 +39,13 @@ const ci = yaml.parse(fs.readFileSync(path.join(base, 'codemagic.yaml'), 'utf8')
 if (!project.targets.OhRight || !project.schemes.OhRight || !project.configs.PersonalTrial) throw Error('Project configuration missing');
 for (const workflow of Object.values(ci.workflows)) {
   if (workflow.environment.xcode !== '26.0' || workflow.publishing || workflow.integrations) throw Error('Unexpected CI capabilities');
-  for (const step of workflow.scripts) if (!fs.existsSync(path.join(base, step.script.replace(/^bash /,'')))) throw Error('Missing CI script');
+  for (const step of workflow.scripts) {
+    const invocation = /^bash\s+(\S+)(?:\s+--settings-ui-only)?$/.exec(step.script.trim());
+    if (!invocation || !fs.existsSync(path.join(base, invocation[1]))) throw Error('Missing CI script or unsupported invocation');
+  }
+}
+if (ci.workflows['package-personal'].scripts.some(step => step.script.includes('--settings-ui-only'))) {
+  throw Error('Personal package must run full verification');
 }
 for (const file of ['资源/Assets.xcassets/Contents.json', '资源/Assets.xcassets/AppIcon.appiconset/Contents.json']) {
   JSON.parse(fs.readFileSync(path.join(base, file), 'utf8'));
