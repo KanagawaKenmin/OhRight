@@ -121,6 +121,6 @@ struct LocalReminderPlanner: ReminderPlanner {
     private func make(category: ReminderCategory, id: String, items: [UUID], at: Date,
                        title: String, body: String, preferences: ReminderPreferences) -> ReminderIntent {
         ReminderIntent(id: id, category: category, itemIDs: items, fireAt: at, title: title,
-                       body: preferences.contentPreview ? body : "打开哦对了，看看之前记下的内容。", sound: preferences.soundEnabled)
+                       body: preferences.contentPreview ? body : "打开哦对了，看看之前记下的内容。", sound: false)
     }
 }

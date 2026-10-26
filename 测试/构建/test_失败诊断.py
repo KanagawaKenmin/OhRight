@@ -35,7 +35,7 @@ class FailureDiagnosticTests(unittest.TestCase):
     def test_assertion_is_primary_even_when_wrapper_later_times_out(self):
         self.log('ios-ui-tests.log', '=== 5/5 UI tests: START (limit 300s) ===\n'
                  'Settings.swift:77: error: XCTAssertNotEqual failed: 0 equals 0\n'
-                 "Test Case '-[SettingsUITests testSound]' failed (75 seconds).\n"
+                 "Test Case '-[ExampleUITests testExample]' failed (75 seconds).\n"
                  '=== 5/5 UI tests: TIMEOUT after 300s ===\n')
         result = summary.summarize(self.root, 124)
         self.assertEqual(result['exitCode'], 124)
@@ -67,10 +67,11 @@ class FailureDiagnosticTests(unittest.TestCase):
         self.log('ios-ui-tests.log', 'Settings.swift:1: error: XCTAssertEqual failed\n')
         self.assertEqual(summary.summarize(self.root, 65)['firstError']['log'], 'ios-ui-tests.log')
 
-    def test_partial_diagnostic_success_is_not_full_verification(self):
+    def test_success_keeps_stage_elapsed_and_full_mode(self):
         self.log('ios-ui-tests.log', '=== UI: PASS (exit 0) ===\n=== Stage elapsed: 25.123s ===\n')
-        result = summary.summarize(self.root, 0, 'settings-diagnostic')
-        self.assertEqual(result['primaryFailure'], 'diagnostic_passed')
+        result = summary.summarize(self.root, 0)
+        self.assertEqual(result['primaryFailure'], 'passed')
+        self.assertEqual(result['mode'], 'full')
         self.assertEqual(result['stages'][0]['elapsedSeconds'], 25.123)
         self.assertEqual(summary.summarize(self.root, 0)['primaryFailure'], 'passed')
 

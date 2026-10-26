@@ -4,9 +4,6 @@
 // 依赖：AppModel；每次使用最新偏好，避免连续修改互相覆盖。
 import SwiftUI
 import UIKit
-#if DEBUG
-import OSLog
-#endif
 
 struct ReminderSettingsView: View {
     @Environment(AppModel.self) private var model
@@ -44,8 +41,6 @@ struct ReminderSettingsView: View {
             }
             Section("通知") {
                 Toggle("显示内容", isOn: binding(\.contentPreview))
-                Toggle("声音", isOn: binding(\.soundEnabled, traceSound: true))
-                    .accessibilityIdentifier("reminderSoundToggle")
             }
             Section("系统") {
                 Button("iPhone 通知设置") { openNotificationSettings() }
@@ -55,25 +50,15 @@ struct ReminderSettingsView: View {
                 Section { NavigationLink("部分提醒暂未安排") { ReminderHelpView() } }
             }
         }
-        .accessibilityIdentifier("reminderSettingsForm")
         .navigationTitle("通知与提醒").navigationBarTitleDisplayMode(.inline)
         .task { await model.refreshNotifications() }.appFeedback()
     }
 
-    private func binding<T>(_ key: WritableKeyPath<ReminderPreferences, T>, traceSound: Bool = false) -> Binding<T> {
+    private func binding<T>(_ key: WritableKeyPath<ReminderPreferences, T>) -> Binding<T> {
         Binding(get: { model.preferences[keyPath: key] }, set: { value in
             var next = model.preferences
-            let previousSound = next.soundEnabled
             next[keyPath: key] = value
-            let saved = model.attempt({ try model.savePreferences(next) })
-            #if DEBUG
-            if traceSound && ProcessInfo.processInfo.arguments.contains("--uitest") {
-                let event = "UI_SOUND binding requested=\(value) before=\(previousSound) after=\(model.preferences.soundEnabled) saved=\(saved) revision=\(model.workspace.revision) hasError=\(model.message != nil)"
-                print(event)
-                Logger(subsystem: "app.ohright.personal", category: "UITestSettings").notice("\(event, privacy: .public)")
-            }
-            #endif
-            if saved, next.enabled,
+            if model.attempt({ try model.savePreferences(next) }), next.enabled,
                model.notificationAccess == .notDetermined {
                 Task { await model.requestNotificationAccess() }
             }

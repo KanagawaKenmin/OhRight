@@ -61,13 +61,10 @@ final class NotificationBridge: NSObject, UNUserNotificationCenterDelegate, @unc
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         let intent = LocalNotificationDelivery.intent(notification.request)
-        let hasSound = notification.request.content.sound != nil
         return await MainActor.run {
             let model = NotificationRouter.shared.model
             if let intent, let id = model?.readingItemID, intent.itemIDs.contains(id) { return [] }
-            var options: UNNotificationPresentationOptions = [.banner, .list]
-            if model?.preferences.soundEnabled == true && hasSound { options.insert(.sound) }
-            return options
+            return [.banner, .list]
         }
     }
 }

@@ -43,7 +43,6 @@ final class ExperienceMigrationTests: XCTestCase {
         let fresh = Workspace()
         let allowed = NotificationOnboardingRule.completed(fresh, access: .allowed)
         XCTAssertTrue(allowed.preferences.enabled)
-        XCTAssertFalse(allowed.preferences.soundEnabled)
         XCTAssertEqual(allowed.preferences.ideaDailyLimit, 1)
         XCTAssertEqual(allowed.preferences.digestMinute, 1230)
         let denied = NotificationOnboardingRule.completed(fresh, access: .denied)

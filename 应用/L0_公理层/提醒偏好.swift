@@ -30,6 +30,7 @@ struct ReminderPreferences: Codable, Equatable, Sendable {
     var digestEnabled = true
     var digestMinute = 20 * 60 + 30
     var contentPreview = true
+    // 只为旧快照/备份保留的字段；声音功能已移除，不再用于设置或通知。
     var soundEnabled = false
 
     func allows(_ date: Date, calendar: Calendar) -> Bool {

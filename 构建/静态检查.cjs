@@ -40,11 +40,11 @@ if (!project.targets.OhRight || !project.schemes.OhRight || !project.configs.Per
 for (const workflow of Object.values(ci.workflows)) {
   if (workflow.environment.xcode !== '26.0' || workflow.publishing || workflow.integrations) throw Error('Unexpected CI capabilities');
   for (const step of workflow.scripts) {
-    const invocation = /^bash\s+(\S+)(?:\s+--settings-ui-only)?$/.exec(step.script.trim());
+    const invocation = /^bash\s+(\S+)$/.exec(step.script.trim());
     if (!invocation || !fs.existsSync(path.join(base, invocation[1]))) throw Error('Missing CI script or unsupported invocation');
   }
 }
-if (ci.workflows['package-personal'].scripts.some(step => step.script.includes('--settings-ui-only'))) {
+if (!ci.workflows['package-personal'].scripts.some(step => step.script.trim() === 'bash 构建/验证工程.sh')) {
   throw Error('Personal package must run full verification');
 }
 for (const file of ['资源/Assets.xcassets/Contents.json', '资源/Assets.xcassets/AppIcon.appiconset/Contents.json']) {

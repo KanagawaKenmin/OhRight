@@ -17,10 +17,10 @@ import Testing
         let model = try AppModel(repository: repository, delivery: TestNotificationService(), attachmentStore: store)
         var first = model.preferences; first.ideaDailyLimit = 2
         try model.savePreferences(first)
-        var second = model.preferences; second.soundEnabled = true
+        var second = model.preferences; second.digestEnabled = false
         try model.savePreferences(second)
         #expect(repository.value.preferences.ideaDailyLimit == 2)
-        #expect(repository.value.preferences.soundEnabled)
+        #expect(!repository.value.preferences.digestEnabled)
         #expect(!repository.value.notificationOnboarding.userChoseReminder)
         let before = model.workspace
         repository.failSave = true

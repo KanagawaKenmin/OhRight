@@ -5,13 +5,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build
 export NSUnbufferedIO=YES
-verification_mode=full
-ui_target=OhRightUITests
-if [[ "$#" -eq 1 && "$1" == "--settings-ui-only" ]]; then
-  verification_mode=settings-diagnostic
-  ui_target=OhRightUITests/SettingsUITests/testReminderSettingsSaveImmediately
-elif [[ "$#" -ne 0 ]]; then
-  echo "Usage: 验证工程.sh [--settings-ui-only]" >&2
+if [[ "$#" -ne 0 ]]; then
+  echo "Usage: 验证工程.sh" >&2
   exit 2
 fi
 # 验证主流程最多 25 分钟；退出后另留约 150 秒用于诊断及终止宽限。
@@ -96,7 +91,7 @@ collect_diagnostics() {
       > build/simulator-shutdown.log 2>&1 || true
   fi
   # 清理/诊断失败不能覆盖原退出码；末尾摘要只读取本次登记日志。
-  run_step 10 "Summarize verification" python3 构建/失败摘要.py "$code" "$verification_mode" || true
+  run_step 10 "Summarize verification" python3 构建/失败摘要.py "$code" full || true
   exit "$code"
 }
 trap collect_diagnostics EXIT
@@ -123,13 +118,9 @@ test_options=(-test-timeouts-enabled YES -default-test-execution-time-allowance 
 run_logged_step ios-unit-tests.log 180 "4/5 iOS unit and storage tests" xcodebuild test-without-building \
   "${common[@]}" "${test_options[@]}" -only-testing:OhRightTests \
   -resultBundlePath "build/UnitTests-$(date +%s).xcresult"
-# 原四项 UI 实测约 249 秒；拆为五项后仍为启动与结果写入保留余量。
-# 总预算不代替单项 120/180 秒看门狗，任何断言失败仍使验证失败。
-run_logged_step ios-ui-tests.log 600 "5/5 UI tests" xcodebuild test-without-building \
-  "${common[@]}" "${test_options[@]}" "-only-testing:$ui_target" \
+# 按用户免费额度约束恢复原 300 秒上限；超时仍失败，不跳过断言。
+# 单项仍使用原 120/180 秒看门狗；全局截止可进一步缩短本阶段预算。
+run_logged_step ios-ui-tests.log 300 "5/5 UI tests" xcodebuild test-without-building \
+  "${common[@]}" "${test_options[@]}" -only-testing:OhRightUITests \
   -resultBundlePath "build/UITests-$(date +%s).xcresult"
-if [[ "$verification_mode" == full ]]; then
-  echo "All five verification stages passed."
-else
-  echo "Settings diagnostic passed; full UI verification is still required."
-fi
+echo "All five verification stages passed."

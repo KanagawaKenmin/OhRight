@@ -25,6 +25,6 @@ enum SnoozeReminder {
         }
         return ReminderIntent(id: "local/snooze/\(itemID)", category: .snooze, itemIDs: [itemID], fireAt: time,
                               title: "哦对了，稍后再看看", body: workspace.preferences.contentPreview ? item.title : "打开看看这条内容。",
-                              sound: workspace.preferences.soundEnabled)
+                              sound: false)
     }
 }

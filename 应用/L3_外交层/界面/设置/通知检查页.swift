@@ -21,7 +21,7 @@ struct NotificationDiagnosticsView: View {
                 Button("两分钟后发一条测试通知") {
                     run {
                         guard try await model.delivery.requestPermission() else { throw DomainError.invalid("请先在系统设置允许通知。") }
-                        try await model.delivery.testNotification(sound: model.preferences.soundEnabled)
+                        try await model.delivery.testNotification()
                         result = "已安排两分钟后测试。现在可以退出应用并锁屏。"
                     }
                 }.disabled(working)

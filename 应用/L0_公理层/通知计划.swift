@@ -14,7 +14,7 @@ struct ReminderIntent: Codable, Identifiable, Equatable, Sendable {
     var fireAt: Date
     var title: String
     var body: String
-    var sound: Bool
+    var sound: Bool // 兼容旧通知意图格式；新计划固定为 false，投递不读取此字段。
 
     var fingerprint: String {
         let payload = "\(id)|\(fireAt.timeIntervalSince1970)|\(title)|\(body)|\(sound)|\(itemIDs)"

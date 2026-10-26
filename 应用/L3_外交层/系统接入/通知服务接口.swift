@@ -9,7 +9,7 @@ import Foundation
     func access() async -> NotificationAccess
     func requestPermission() async throws -> Bool
     func pruneDelivered(validItemIDs: Set<UUID>) async
-    func testNotification(sound: Bool) async throws
+    func testNotification() async throws
     func diagnosticRows() async -> [(id: String, title: String, date: Date?)]
     func clearTestNotifications() async
     func probeCapacity() async throws -> Int

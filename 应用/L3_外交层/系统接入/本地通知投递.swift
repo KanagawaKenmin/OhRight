@@ -35,7 +35,7 @@ import UserNotifications
         let task = Task { @MainActor in
             let status = await access()
             if status != .notDetermined { return status.allowed }
-            return try await center.requestAuthorization(options: [.alert, .sound])
+            return try await center.requestAuthorization(options: [.alert])
         }
         permissionTask = task
         defer { permissionTask = nil }
@@ -75,12 +75,12 @@ import UserNotifications
         center.removeDeliveredNotifications(withIdentifiers: invalid.map { $0.request.identifier })
     }
 
-    func testNotification(sound: Bool = false) async throws {
+    func testNotification() async throws {
         guard try await requestPermission() else { throw DomainError.invalid("通知未开启，请前往 iPhone 通知设置。") }
         let content = UNMutableNotificationContent()
         content.title = "哦对了，测试提醒到了"
         content.body = "这条通知由 iPhone 本地安排。打开应用查看你的便条。"
-        content.sound = sound ? .default : nil
+        content.sound = nil
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 120, repeats: false)
         center.removePendingNotificationRequests(withIdentifiers: ["debug/two-minutes"])
         try await center.add(UNNotificationRequest(identifier: "debug/two-minutes", content: content, trigger: trigger))
@@ -90,7 +90,7 @@ import UserNotifications
         let content = UNMutableNotificationContent()
         content.title = intent.title
         content.body = intent.body
-        content.sound = intent.sound ? .default : nil
+        content.sound = nil
         content.interruptionLevel = .active
         content.categoryIdentifier = intent.category == .digest ? "digest" : "item"
         content.threadIdentifier = intent.category == .digest ? "plans" : intent.itemIDs.first?.uuidString ?? "ideas"

@@ -1,16 +1,14 @@
 {
-  "checkedAt": "2026-10-24T08:26:06.488805+00:00",
-  "version": "0.3.0",
-  "build": 2,
+  "checkedAt": "2026-10-26T05:57:30.104148+00:00",
   "sourceVerification": {
     "version": "0.3.0",
     "build": "2",
     "verifiedFiles": 104,
-    "manifestSHA256": "5c2a3214d90e5b83e7a68cb4d73cf8cdac7c1c75b4e3319b72143823ac33d01d",
+    "manifestSHA256": "043e031af453d07d77dc5f409476eda5cbf40d9ec1ccd6f9e15ae699ce4e44a2",
     "commit": null
   },
   "staticChecks": {
-    "checkedAt": "2026-10-24T08:20:05.603Z",
+    "checkedAt": "2026-10-26T05:53:57.710Z",
     "swiftFiles": 79,
     "syntaxErrors": [],
     "bashScripts": 3,
@@ -24,41 +22,26 @@
     "passed": 27,
     "failed": 0
   },
-  "logReplay": {
-    "primaryFailure": "assertion_failure",
-    "termination": "timeout",
-    "originalExitCode": 124,
-    "firstError": "/Users/builder/clone/测试/界面/体验改版界面测试.swift:77: error: -[OhRightUITests.ExperienceUITests testSettingsSaveImmediatelyAndHistoryExcludesActive] : XCTAssertNotEqual failed: (\"Optional(\"0\")\") is equal to (\"Optional(\"0\")\")"
-  },
-  "changedOrAddedSource": [
-    "codemagic.yaml",
-    "应用/L3_外交层/界面/设置/通知与提醒页.swift",
-    "构建/失败摘要.py",
-    "构建/收集崩溃报告.py",
-    "构建/检查源码版本.py",
-    "构建/静态检查.cjs",
-    "构建/验证工程.sh",
-    "测试/构建/test_失败诊断.py",
-    "测试/构建/test_源码版本.py",
-    "测试/构建/test_阶段预算.py",
-    "测试/界面/体验改版界面测试.swift",
-    "测试/界面/提醒设置界面测试.swift"
+  "uiTestsDefined": 4,
+  "removed": [
+    "sound setting",
+    "notification audio",
+    "sound UI test",
+    "settings diagnostic workflow"
   ],
-  "coreAndStorageSourcesUnchanged": true,
-  "previousCloudResults": {
-    "log": "core_and_simulator_checks-20261024-ui-sound.log",
-    "corePassed": 49,
-    "iosCorePassed": 48,
-    "storageAndCoordinatorPassed": 11,
-    "simulatorBuildAndBootPassed": true,
-    "uiPassed": 3,
-    "uiFailed": 1
+  "legacyDataFieldsPreserved": true,
+  "retiredTestPathOverwrittenWithComments": true,
+  "limits": {
+    "uiSeconds": 300,
+    "verifyMinutes": 30,
+    "packageMinutes": 45
   },
-  "currentUIStates": {
-    "defined": 5,
-    "executedOnCloud": false
+  "latestUserCloudFeedback": {
+    "uiTestsPassed": 4,
+    "uiTestsFailed": 1,
+    "uiStageElapsedSeconds": 208.68,
+    "exitCode": 65
   },
-  "currentSwiftTypeCheckExecuted": false,
-  "currentFullVerifyPassed": false,
+  "newSourceCloudTested": false,
   "newIPAGenerated": false
 }

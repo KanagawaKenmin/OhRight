@@ -15,7 +15,7 @@ struct HelpView: View {
                     sending = true
                     Task { @MainActor in
                         do {
-                            try await model.delivery.testNotification(sound: model.preferences.soundEnabled)
+                            try await model.delivery.testNotification()
                             model.notice = "两分钟后发送，请锁屏等待。"
                         } catch { model.report(error) }
                         await model.refreshNotifications()
@@ -36,7 +36,7 @@ struct ReminderHelpView: View {
             Text("提醒会在打开 App 时更新。连续几天未打开，提醒可能暂停。")
             Text("新建或补充后的琐事，24 小时内不会提醒。同一条琐事至少间隔 3 天。没有合适的内容时不会发送。")
             Text("免打扰时段作用于所有提醒。全天随机包括夜间。")
-            Text("关闭声音后仍可显示通知。横幅、锁屏预览和专注模式由 iPhone 设置控制。")
+            Text("提醒以静音通知显示。横幅、锁屏预览和专注模式由 iPhone 设置控制。")
             Text("本地只安排含今天的三个自然日。窗口以外的期限提醒与容量不足的提醒会在下次打开时重新安排。")
         }.navigationTitle("提醒帮助")
     }
