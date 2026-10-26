@@ -1,16 +1,17 @@
 {
-  "checkedAt": "2026-10-26T07:58:15.864401+00:00",
+  "checkedAt": "2026-10-26T12:05:12.582470+00:00",
   "sourceVerification": {
-    "version": "0.4.0",
-    "build": "3",
-    "verifiedFiles": 111,
-    "manifestSHA256": "fc3cb974abbdd2ceb46f1f86d5a9c9808446ec895ccd405bfa94691072dcce26",
+    "version": "0.4.1",
+    "build": "4",
+    "verifiedFiles": 113,
+    "manifestSHA256": "0e33e39c06852fcd4f2a5b4cafa11e857be323cce74497bed991595eca0c35ee",
     "commit": null
   },
   "staticChecks": {
-    "checkedAt": "2026-10-26T07:58:15.491Z",
+    "checkedAt": "2026-10-26T12:05:12.270Z",
     "swiftFiles": 86,
     "syntaxErrors": [],
+    "gestureInterfaceChecks": "direct bridged calls checked",
     "bashScripts": 3,
     "yamlChecks": "passed",
     "filesOver200Lines": [],
@@ -21,6 +22,22 @@
   "buildOrchestrationTests": {
     "passed": 27,
     "failed": 0
+  },
+  "gestureInterfaceTests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "originalPackageReplay": {
+    "originalPackage": "0.4.0 (3)",
+    "originalErrors": [
+      {
+        "file": "应用/L3_外交层/界面/首页.swift",
+        "line": 44,
+        "text": "HomeBackgroundTap is a recognizer representable, not SwiftUI.Gesture; use .gesture(...) instead of .simultaneousGesture(...)"
+      }
+    ],
+    "fixedPackage": "0.4.1 (4)",
+    "currentErrors": []
   },
   "colorContrast": [
     {
@@ -85,12 +102,7 @@
     "packageMinutes": 45
   },
   "newManifestPaths": [
-    "应用/L3_外交层/界面/共用/整行操作按钮.swift",
-    "应用/L3_外交层/界面/共用/记录格式工具.swift",
-    "应用/L3_外交层/界面/共用/首页手势状态.swift",
-    "应用/L3_外交层/界面/共用/首页模式列表.swift",
-    "应用/L3_外交层/界面/共用/首页模式选择.swift",
-    "应用/L3_外交层/界面/共用/首页横向手势.swift",
-    "测试/存储/首页手势状态测试.swift"
+    "构建/检查手势接口.cjs",
+    "测试/构建/手势接口检查测试.cjs"
   ]
 }

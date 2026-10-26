@@ -22,41 +22,21 @@ struct HomeView: View {
 
     var body: some View {
         @Bindable var model = model
-        NavigationStack(path: $model.path) {
-            GeometryReader { geometry in
-                ZStack {
-                    ModeBackground(mode: model.mode)
-                    VStack(spacing: 0) {
-                        header
-                        notificationStatus
-                        ZStack {
-                            page(.idea, width: geometry.size.width)
-                            page(.plan, width: geometry.size.width)
-                        }.clipped()
-                        primaryActions
-                    }
-                }
-                .coordinateSpace(name: "homeGestures")
-                .onPreferenceChange(HomeHitRegions.self) { regions = $0 }
-                .gesture(HomePanGesture(regions: regions, enabled: acceptsGesture) { event in
-                    handle(event, width: geometry.size.width)
-                })
-                .simultaneousGesture(HomeBackgroundTap(regions: regions, enabled: acceptsGesture) {
-                    withAnimation(AppPalette.motion(reduced: reduceMotion)) { interaction.reset() }
-                })
-            }
+        NavigationStack(path: $model.path) { observedContent }
+            .tint(AppPalette.accent(model.mode))
+    }
+
+    // 各段提供独立的 opaque 返回类型，避免导航、手势和生命周期合为一个求解表达式。
+    private var routedContent: some View {
+        gestureContent
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: UUID.self) { ItemDetailView(id: $0).toolbar(.visible, for: .navigationBar) }
-            .sheet(item: $sheet) { route in
-                switch route {
-                case .capture: ItemEditorView(kind: captureKind)
-                case .settings: SettingsView()
-                case .library: LibraryView()
-                case .history: LibraryView(scope: .history)
-                case .freeTime: FreeTimeView()
-                }
-            }
+            .sheet(item: $sheet, content: sheetContent)
+    }
+
+    private var observedContent: some View {
+        routedContent
             .task { await model.prepareNotificationOnboarding() }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { interaction.reset() }
@@ -70,7 +50,49 @@ struct HomeView: View {
             .onChange(of: model.path) { _, value in interaction.reset(); if !value.isEmpty { sheet = nil } }
             .onChange(of: model.routeGeneration) { _, _ in sheet = nil; interaction.reset() }
             .appFeedback()
-        }.tint(AppPalette.accent(model.mode))
+    }
+
+    private var gestureContent: some View {
+        GeometryReader { geometry in
+            canvas(width: geometry.size.width)
+                .coordinateSpace(name: "homeGestures")
+                .onPreferenceChange(HomeHitRegions.self) { regions = $0 }
+                .gesture(panGesture(width: geometry.size.width))
+                // UIKit 桥接只支持 gesture 重载，不能传入要求 SwiftUI.Gesture 的 simultaneousGesture。
+                .gesture(backgroundTap)
+        }
+    }
+
+    private func canvas(width: CGFloat) -> some View {
+        ZStack {
+            ModeBackground(mode: model.mode)
+            VStack(spacing: 0) {
+                header
+                notificationStatus
+                ZStack { page(.idea, width: width); page(.plan, width: width) }.clipped()
+                primaryActions
+            }
+        }
+    }
+
+    private func panGesture(width: CGFloat) -> HomePanGesture {
+        HomePanGesture(regions: regions, enabled: acceptsGesture) { event in handle(event, width: width) }
+    }
+
+    private var backgroundTap: HomeBackgroundTap {
+        HomeBackgroundTap(regions: regions, enabled: acceptsGesture) {
+            withAnimation(AppPalette.motion(reduced: reduceMotion)) { interaction.reset() }
+        }
+    }
+
+    @ViewBuilder private func sheetContent(_ route: HomeSheet) -> some View {
+        switch route {
+        case .capture: ItemEditorView(kind: captureKind)
+        case .settings: SettingsView()
+        case .library: LibraryView()
+        case .history: LibraryView(scope: .history)
+        case .freeTime: FreeTimeView()
+        }
     }
 
     private var header: some View {

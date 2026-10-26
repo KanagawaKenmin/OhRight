@@ -3,6 +3,7 @@
 // 依赖：开发目录 .tools 下 ast-grep 与 Swift 语法，不进入应用。
 const fs = require('node:fs');
 const path = require('node:path');
+const { checkGestureInterfaces } = require('./检查手势接口.cjs');
 const base = path.resolve(__dirname, '..');
 const { registerDynamicLanguage, parse } = require(path.join(base, '.tools/node_modules/@ast-grep/napi'));
 const swift = require(path.join(base, '.tools/node_modules/@ast-grep/lang-swift'));
@@ -21,6 +22,9 @@ visit(path.join(base, '应用'));
 visit(path.join(base, '测试'));
 files.push(path.join(base, 'Package.swift'));
 const errors = [];
+const gestureErrors = checkGestureInterfaces(Object.fromEntries(files.map(file =>
+  [path.relative(base, file), fs.readFileSync(file, 'utf8')])));
+errors.push(...gestureErrors);
 const largeFiles = [];
 for (const file of files) {
   const source = fs.readFileSync(file, 'utf8');
@@ -54,7 +58,7 @@ if (!fs.existsSync(path.join(base, '资源/Assets.xcassets/AppIcon.appiconset/Ap
   errors.push({ file: 'AppIcon.png', text: 'Missing icon' });
 }
 const report = { checkedAt: new Date().toISOString(), swiftFiles: files.length,
-  syntaxErrors: errors, bashScripts: 3, yamlChecks: 'passed', filesOver200Lines: largeFiles,
+  syntaxErrors: errors, gestureInterfaceChecks: 'direct bridged calls checked', bashScripts: 3, yamlChecks: 'passed', filesOver200Lines: largeFiles,
   limitations: ['Grammar parsing only; Swift type checking, unit execution and iOS build require the macOS workflow.'] };
 fs.mkdirSync(path.join(base, 'build'), { recursive: true });
 fs.writeFileSync(path.join(base, 'build/static-check.json'), JSON.stringify(report, null, 2));
