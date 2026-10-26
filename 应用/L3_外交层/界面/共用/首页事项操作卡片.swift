@@ -21,16 +21,16 @@ struct HomeActionCard: View {
             actions.opacity(Double(progress))
                 .scaleEffect(reduceMotion ? 1 : 0.85 + progress * 0.15, anchor: .trailing)
                 .allowsHitTesting(opened).accessibilityHidden(!opened)
-            ItemCard(item: item, minimumHeight: typeSize.isAccessibilitySize ? 150 : 112)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if opened { settle { interaction.reset() } }
-                    else { interaction.reset(); model.path.append(item.id) }
-                }
-                .accessibilityAddTraits(.isButton)
+            Button {
+                if opened { settle { interaction.reset() } }
+                else { interaction.reset(); model.path.append(item.id) }
+            } label: {
+                ItemCard(item: item, minimumHeight: typeSize.isAccessibilitySize ? 150 : 112)
+                    .contentShape(Rectangle())
+            }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("itemCard/\(item.kind.rawValue)/\(item.id.uuidString)")
                 .accessibilityValue("\(item.isStarred ? "已星标；" : "")\(opened ? "操作已展开" : "操作已收起")")
-                .accessibilityAction { interaction.reset(); model.path.append(item.id) }
                 .accessibilityAction(named: item.isStarred ? "取消星标" : "星标") { toggleStar() }
                 .accessibilityAction(named: "归档") { perform(.archive) }
                 .accessibilityAction(named: "删除") { perform(.delete) }

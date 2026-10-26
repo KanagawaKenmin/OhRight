@@ -48,19 +48,22 @@ struct HomePanGesture: UIGestureRecognizerRepresentable {
         }
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
             guard parent.enabled, !UIAccessibility.isVoiceOverRunning else { return false }
+            let point = converter.convert(globalPoint: touch.location(in: nil), to: .named("homeGestures"))
+            guard let owner = HomeInteraction.hit(at: point, regions: parent.regions) else { return false }
             var view = touch.view
             while let candidate = view {
-                if candidate is UIControl || candidate is UITextView || candidate is UITextField { return false }
+                if candidate is UITextView || candidate is UITextField { return false }
+                // 卡片现在是标准按钮：起点明确归属卡片时允许横滑，其他原生控件仍不接管。
+                if candidate is UIControl && owner == .page { return false }
                 if candidate === gestureRecognizer.view { break }
                 view = candidate.superview
             }
-            let point = converter.convert(globalPoint: touch.location(in: nil), to: .named("homeGestures"))
             // 保留最外侧系统边缘手势。页面跨区移动后不重新命中。
             let bounds = gestureRecognizer.view?.bounds ?? .zero
             let localX = touch.location(in: gestureRecognizer.view).x
             guard localX >= 16, localX <= bounds.width - 16 else { return false }
-            target = HomeInteraction.hit(at: point, regions: parent.regions)
-            return target != nil
+            target = owner
+            return true
         }
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return false }

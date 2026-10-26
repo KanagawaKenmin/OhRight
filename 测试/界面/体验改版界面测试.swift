@@ -13,7 +13,8 @@ final class ExperienceUITests: XCTestCase {
 
     @MainActor private func fixtureCard(_ app: XCUIApplication) -> XCUIElement {
         let card = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "itemCard/idea/")).firstMatch
-        require(card, in: app, stage: "隔离场景记录已准备")
+        // 前置数据是否存在与具体动作能否执行分开；历史范围测试不需要点击这张卡片。
+        wait(NSPredicate(format: "exists == true"), on: card, in: app, stage: "隔离场景记录应出现在首页")
         return card
     }
 
@@ -61,6 +62,7 @@ final class ExperienceUITests: XCTestCase {
         let id = card.identifier.components(separatedBy: "/").last!
         card.tap()
         let convert = app.buttons["convertToPlan"]
+        require(convert, in: app, stage: "实际点击卡片后应打开可转换的详情")
         XCTAssertGreaterThan(convert.frame.width, app.frame.width * 0.75)
         XCTAssertGreaterThanOrEqual(convert.frame.height, 52)
         convert.tap()

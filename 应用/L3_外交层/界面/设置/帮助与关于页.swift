@@ -25,7 +25,7 @@ struct HelpView: View {
                 if model.notificationAccess == .denied { Button("前往设置") { openNotificationSettings() } }
                 NavigationLink("故障排查") { NotificationDiagnosticsView() }
             }
-            Section { LabeledContent("版本", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.4.3") }
+            Section { LabeledContent("版本", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.4.4") }
         }.navigationTitle("帮助与关于").appFeedback()
     }
 }
